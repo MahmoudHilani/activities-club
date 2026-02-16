@@ -1,0 +1,1 @@
+-- Initial migration (tables will be added soon)
