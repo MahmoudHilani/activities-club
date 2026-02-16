@@ -1,4 +1,3 @@
-package PACKAGE_NAME;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public class ActivityRepository {
-}
+public interface ActivityRepository extends JpaRepository<Activity, Long> {}

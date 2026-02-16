@@ -1,1 +1,4 @@
--- Initial migration (tables will be added soon)
+create table activities (
+  id bigserial primary key,
+  title varchar(120) not null
+);
