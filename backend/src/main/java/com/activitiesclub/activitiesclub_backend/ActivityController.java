@@ -1,3 +1,5 @@
+package com.activitiesclub.activitiesclub_backend;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
