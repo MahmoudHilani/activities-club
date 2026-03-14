@@ -13,12 +13,17 @@ import java.nio.charset.StandardCharsets;
 
 @Service
 public class JwtService {
+    private static final String DEFAULT_SECRET = "dev-only-jwt-secret-change-me-dev-only-jwt-secret-change-me";
+    private static final long DEFAULT_EXPIRATION_MS = 900_000L;
+
     private String secret;
     private long expMs;
-    public JwtService(@Value("${app.jwt.secret}") String secret, @Value("${app.jwt.expiration-ms}") long expMs) {
-        this.secret = secret;
-        this.expMs = expMs;
+
+    public JwtService(@Value("${app.jwt.secret:}") String secret, @Value("${app.jwt.expiration-ms:}") String expMs) {
+        this.secret = secret == null || secret.isBlank() ? DEFAULT_SECRET : secret;
+        this.expMs = expMs == null || expMs.isBlank() ? DEFAULT_EXPIRATION_MS : Long.parseLong(expMs);
     }
+
     public String generate(User user) {
         return Jwts.builder()
         .subject(user.getId().toString())

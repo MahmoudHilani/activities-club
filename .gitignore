@@ -1,1 +1,40 @@
- 
+# Workspace
+.idea/
+.vscode/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Local environment overrides
+.env
+.env.local
+.env.*.local
+
+# Root-level build artifacts
+dist/
+build/
+coverage/
+tmp/
+temp/
+
+# Java / Maven
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/coverage/
+frontend/.eslintcache
+frontend/*.tsbuildinfo
+
+# Docker
+*.pid

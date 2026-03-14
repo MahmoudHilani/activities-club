@@ -1,31 +1,57 @@
 services:
   db:
     image: postgres:16
-    container_name: activitiesclub-db
     environment:
-      POSTGRES_DB: activitiesclub
-      POSTGRES_USER: app
-      POSTGRES_PASSWORD: app_password
+      POSTGRES_DB: ${DB_NAME:-activitiesclub}
+      POSTGRES_USER: ${DB_USERNAME:-app}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-app_password}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5433}:5432"
     volumes:
       - activitiesclub_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U app -d activitiesclub"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 10
 
+  backend:
+    build:
+      context: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8080
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-activitiesclub}
+      DB_USERNAME: ${DB_USERNAME:-app}
+      DB_PASSWORD: ${DB_PASSWORD:-app_password}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-change-me-dev-only-jwt-secret-change-me}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-900000}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+
   pgadmin:
     image: dpage/pgadmin4:8
-    container_name: activitiesclub-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@local.dev
       PGADMIN_DEFAULT_PASSWORD: admin_password
     ports:
-      - "5050:80"
+      - "${PGADMIN_PORT:-5050}:80"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   activitiesclub_pgdata:

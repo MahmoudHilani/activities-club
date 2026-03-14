@@ -1,15 +1,16 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
     name: activitiesclub
   datasource:
-    url: jdbc:postgresql://localhost:5432/activitiesclub
-    username: app
-    password: app_password
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:activitiesclub}
+    username: ${DB_USERNAME:app}
+    password: ${DB_PASSWORD:app_password}
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
     properties:
@@ -20,5 +21,5 @@ spring:
 
 app:
   jwt:
-    secret: ${JWT_SECRET}
-    expiration-ms: ${JWT_EXPIRATION_MS}
+    secret: ${JWT_SECRET:dev-only-jwt-secret-change-me-dev-only-jwt-secret-change-me}
+    expiration-ms: ${JWT_EXPIRATION_MS:900000}
