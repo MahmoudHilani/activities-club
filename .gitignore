@@ -1,6 +1,9 @@
 # Workspace
 .idea/
 .vscode/
+!/.vscode/
+!/.vscode/settings.json
+!/.vscode/extensions.json
 
 # OS / editor noise
 .DS_Store
