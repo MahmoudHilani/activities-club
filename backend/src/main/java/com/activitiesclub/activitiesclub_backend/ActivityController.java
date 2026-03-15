@@ -10,6 +10,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,6 +31,13 @@ public class ActivityController {
     public ActivityController(ActivityRepository activityRepository, UserRepository userRepository) {
         this.activityRepository = activityRepository;
         this.userRepository = userRepository;
+    }
+
+    @GetMapping("/public")
+    public Page<ActivityResponse> listPublic(@PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+        return activityRepository
+            .findByStatusAndVisibility(ActivityStatus.PUBLISHED, ActivityVisibility.PUBLIC, pageable)
+            .map(ActivityResponse::from);
     }
 
     @GetMapping
@@ -62,9 +71,37 @@ public class ActivityController {
         return ActivityResponse.from(activityRepository.save(activity));
     }
 
+    @PatchMapping("/{activityId}/publish")
+    public ActivityResponse publish(
+        @PathVariable Long activityId,
+        @AuthenticationPrincipal AuthenticatedUser currentUser
+    ) {
+        Activity activity = activityRepository.findById(activityId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Activity not found"));
+
+        if (!canManageActivity(activity, currentUser)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot publish this activity");
+        }
+        if (activity.getStatus() == ActivityStatus.CANCELLED || activity.getStatus() == ActivityStatus.COMPLETED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only draft activities can be published");
+        }
+
+        activity.setStatus(ActivityStatus.PUBLISHED);
+        return ActivityResponse.from(activityRepository.save(activity));
+    }
+
     private void validateRequest(ActivityCreateRequest body) {
         validateAfter("endAt", body.endAt(), "startAt", body.startAt(), false);
         validateAfter("reservationClosesAt", body.reservationClosesAt(), "reservationOpensAt", body.reservationOpensAt(), true);
+    }
+
+    private boolean canManageActivity(Activity activity, AuthenticatedUser currentUser) {
+        if (currentUser.role() == Role.ADMIN) {
+            return true;
+        }
+
+        User organizer = activity.getOrganizer();
+        return organizer != null && organizer.getId().equals(currentUser.id());
     }
 
     private void validateAfter(String currentName, Instant current, String previousName, Instant previous, boolean equalAllowed) {
