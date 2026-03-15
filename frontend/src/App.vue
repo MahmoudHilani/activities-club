@@ -1,11 +1,18 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { RouterView } from 'vue-router'
+
+import AppHeader from '@/components/AppHeader.vue'
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
-</template>
+  <div class="relative min-h-screen overflow-hidden">
+    <div class="pointer-events-none absolute inset-x-0 top-[-16rem] h-[32rem] bg-[radial-gradient(circle_at_top,rgba(26,86,219,0.2),transparent_62%)]" />
+    <div class="pointer-events-none absolute right-[-10rem] top-40 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(245,158,11,0.22),transparent_70%)] blur-3xl" />
 
-<style scoped></style>
+    <AppHeader />
+
+    <main class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-7xl flex-col px-4 pb-16 pt-8 sm:px-6 lg:px-8 lg:pt-10">
+      <RouterView />
+    </main>
+  </div>
+</template>

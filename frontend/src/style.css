@@ -1,0 +1,105 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 0.35rem);
+  --radius-md: calc(var(--radius) - 0.15rem);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.35rem);
+  --font-sans: "Manrope", "Segoe UI", sans-serif;
+  --font-serif: "Fraunces", Georgia, serif;
+}
+
+:root {
+  --background: oklch(0.98 0.008 85);
+  --foreground: oklch(0.23 0.03 250);
+  --card: color-mix(in srgb, white 78%, #f4efe4 22%);
+  --card-foreground: oklch(0.23 0.03 250);
+  --popover: oklch(0.99 0.002 84);
+  --popover-foreground: oklch(0.23 0.03 250);
+  --primary: oklch(0.52 0.16 258);
+  --primary-foreground: oklch(0.99 0.01 85);
+  --secondary: oklch(0.91 0.05 80);
+  --secondary-foreground: oklch(0.27 0.02 250);
+  --muted: oklch(0.94 0.02 84);
+  --muted-foreground: oklch(0.48 0.03 250);
+  --accent: oklch(0.78 0.14 72);
+  --accent-foreground: oklch(0.21 0.02 250);
+  --destructive: oklch(0.58 0.2 25);
+  --destructive-foreground: oklch(0.98 0.01 85);
+  --border: oklch(0.86 0.03 84);
+  --input: oklch(0.86 0.03 84);
+  --ring: oklch(0.52 0.16 258 / 0.45);
+  --radius: 1.15rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    min-height: 100vh;
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 248, 239, 0.9)),
+      radial-gradient(circle at top left, rgba(26, 86, 219, 0.08), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(245, 158, 11, 0.12), transparent 24%);
+  }
+
+  body::selection {
+    background: color-mix(in srgb, oklch(0.52 0.16 258) 24%, white);
+  }
+
+  a {
+    @apply text-inherit no-underline;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  #app {
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  .surface-panel {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(249, 245, 238, 0.82)),
+      rgba(255, 255, 255, 0.72);
+    box-shadow:
+      0 22px 44px rgba(34, 45, 66, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(14px);
+  }
+
+  .headline-balance {
+    text-wrap: balance;
+  }
+}
