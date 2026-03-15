@@ -28,7 +28,7 @@ services:
       DB_NAME: ${DB_NAME:-activitiesclub}
       DB_USERNAME: ${DB_USERNAME:-app}
       DB_PASSWORD: ${DB_PASSWORD:-app_password}
-      JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-change-me-dev-only-jwt-secret-change-me}
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-900000}
     ports:
       - "${BACKEND_PORT:-8080}:8080"

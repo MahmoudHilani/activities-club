@@ -20,10 +20,11 @@ The root `.env` file controls the exposed ports, database credentials, and JWT s
 
 ## Backend-only startup
 
-The backend also starts directly from the `backend` folder without preloading shell variables because `application.yaml` now has local development defaults.
+The backend also starts directly from the `backend` folder, but you must provide a `JWT_SECRET` because the app no longer falls back to an insecure signing key.
 
 ```sh
 cd backend
+export JWT_SECRET=replace-with-a-local-secret-at-least-32-bytes
 ./mvnw spring-boot:run
 ```
 
