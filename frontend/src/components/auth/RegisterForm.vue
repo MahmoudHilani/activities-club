@@ -35,6 +35,7 @@ const registerSchema = toTypedSchema(
         .min(8, 'Password must be at least 8 characters')
         .max(72, 'Password must be 72 characters or less'),
       confirmPassword: z.string().min(1, 'Confirm your password'),
+      isAdmin: z.boolean(),
     })
     .refine((values) => values.password === values.confirmPassword, {
       path: ['confirmPassword'],
@@ -44,12 +45,16 @@ const registerSchema = toTypedSchema(
 
 const { defineField, errors, handleSubmit, isSubmitting } = useForm({
   validationSchema: registerSchema,
+  initialValues: {
+    isAdmin: false,
+  },
 })
 
 const [username, usernameAttrs] = defineField('username')
 const [email, emailAttrs] = defineField('email')
 const [password, passwordAttrs] = defineField('password')
 const [confirmPassword, confirmPasswordAttrs] = defineField('confirmPassword')
+const [isAdmin, isAdminAttrs] = defineField('isAdmin')
 
 const onSubmit = handleSubmit(async (values) => {
   serverError.value = ''
@@ -59,6 +64,7 @@ const onSubmit = handleSubmit(async (values) => {
       username: values.username,
       email: values.email,
       password: values.password,
+      isAdmin: values.isAdmin,
     })
     await router.push({ name: 'activities' })
   } catch (error) {
@@ -127,6 +133,20 @@ const onSubmit = handleSubmit(async (values) => {
         {{ errors.confirmPassword }}
       </p>
     </div>
+
+    <label
+      class="flex items-center gap-3 rounded-2xl border border-border bg-white/60 px-4 py-3 text-sm text-foreground"
+      for="register-is-admin"
+    >
+      <input
+        id="register-is-admin"
+        v-model="isAdmin"
+        v-bind="isAdminAttrs"
+        class="h-4 w-4 rounded border-border"
+        type="checkbox"
+      />
+      <span>Register this account as an admin</span>
+    </label>
 
     <Button class="w-full" :disabled="isSubmitting" size="lg" type="submit">
       <LoaderCircle v-if="isSubmitting" class="h-4 w-4 animate-spin" />

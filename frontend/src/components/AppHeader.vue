@@ -13,6 +13,7 @@ const sessionStore = useSessionStore()
 const currentUserLabel = computed(() =>
   sessionStore.user ? `Signed in as ${sessionStore.user.username}` : 'Member access',
 )
+const isAdmin = computed(() => sessionStore.user?.role === 'ADMIN')
 
 function navClass(isActive: boolean): string {
   return cn(
@@ -42,6 +43,13 @@ function navClass(isActive: boolean): string {
       <div class="hidden items-center gap-2 md:flex">
         <RouterLink :class="navClass(route.name === 'activities')" :to="{ name: 'activities' }">
           Activities
+        </RouterLink>
+        <RouterLink
+          v-if="isAdmin"
+          :class="navClass(route.name === 'admin-activities')"
+          :to="{ name: 'admin-activities' }"
+        >
+          Admin
         </RouterLink>
       </div>
 

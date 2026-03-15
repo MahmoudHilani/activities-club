@@ -42,7 +42,7 @@ public class AuthService {
         u.setUsername(normalizedUsername);
         u.setEmail(normalizedEmail);
         u.setPasswordHash(hash);
-        u.setRole(Role.STUDENT);
+        u.setRole(req.isAdmin() ? Role.ADMIN : Role.STUDENT);
         User saved = users.save(u);
         return new AuthResponse(jwtService.generate(saved));
     }

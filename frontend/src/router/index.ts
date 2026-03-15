@@ -26,6 +26,15 @@ const router = createRouter({
         title: 'Login or register',
       },
     },
+    {
+      path: '/admin/activities',
+      name: 'admin-activities',
+      component: () => import('@/views/AdminActivitiesView.vue'),
+      meta: {
+        title: 'Admin dashboard',
+        requiresAdmin: true,
+      },
+    },
   ],
 })
 
@@ -38,6 +47,16 @@ router.beforeEach(async (to) => {
 
   if (to.name === 'auth' && sessionStore.isAuthenticated) {
     return { name: 'activities' }
+  }
+
+  if (to.meta.requiresAdmin) {
+    if (!sessionStore.isAuthenticated) {
+      return { name: 'auth', query: { mode: 'login' } }
+    }
+
+    if (sessionStore.user?.role !== 'ADMIN') {
+      return { name: 'activities' }
+    }
   }
 
   return true

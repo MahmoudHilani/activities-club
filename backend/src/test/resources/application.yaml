@@ -9,8 +9,14 @@ spring:
       ddl-auto: create-drop
   flyway:
     enabled: false
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 7MB
 
 app:
   jwt:
     secret: test-only-jwt-secret-that-is-at-least-32-bytes
     expiration-ms: 900000
+  uploads:
+    dir: ./target/test-uploads

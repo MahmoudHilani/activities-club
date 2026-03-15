@@ -10,12 +10,14 @@ interface RenderRouteOptions {
   route: string
   authComponent?: Component
   activitiesComponent?: Component
+  adminComponent?: Component
 }
 
 export async function renderRoute({
   route,
   authComponent = PlaceholderView,
   activitiesComponent = PlaceholderView,
+  adminComponent = PlaceholderView,
 }: RenderRouteOptions) {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -29,6 +31,11 @@ export async function renderRoute({
         path: '/activities',
         name: 'activities',
         component: activitiesComponent,
+      },
+      {
+        path: '/admin/activities',
+        name: 'admin-activities',
+        component: adminComponent,
       },
     ],
   })

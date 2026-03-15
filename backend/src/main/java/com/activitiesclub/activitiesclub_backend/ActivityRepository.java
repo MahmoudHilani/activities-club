@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ActivityRepository extends JpaRepository<Activity, Long> {
     Page<Activity> findByStatusAndVisibility(ActivityStatus status, ActivityVisibility visibility, Pageable pageable);
+
+    Page<Activity> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

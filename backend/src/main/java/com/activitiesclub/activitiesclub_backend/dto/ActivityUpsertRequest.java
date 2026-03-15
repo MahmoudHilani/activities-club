@@ -1,14 +1,15 @@
 package com.activitiesclub.activitiesclub_backend.dto;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import com.activitiesclub.activitiesclub_backend.ActivityVisibility;
 
-public record ActivityCreateRequest(
+public record ActivityUpsertRequest(
     @NotBlank
     @Size(max = 120)
     String title,
@@ -26,8 +27,10 @@ public record ActivityCreateRequest(
     @Size(max = 255)
     String locationAddress,
 
-    @Positive
     Integer capacity,
+
+    @DecimalMin(value = "0.00", inclusive = true)
+    BigDecimal ticketPrice,
 
     ActivityVisibility visibility,
 

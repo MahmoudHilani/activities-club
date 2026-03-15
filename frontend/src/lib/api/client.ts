@@ -6,9 +6,6 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() || 'http://localhos
 
 export const apiClient = axios.create({
   baseURL: apiBaseUrl,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 })
 
 apiClient.interceptors.request.use((config) => {

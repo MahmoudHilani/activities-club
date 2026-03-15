@@ -10,7 +10,7 @@ export function formatDateRange(startAt?: string | null, endAt?: string | null):
     const end = new Date(endAt)
 
     if (isSameDay(start, end)) {
-      return `${format(start, 'EEE, MMM d')} · ${format(start, 'p')} - ${format(end, 'p')}`
+      return `${format(start, 'EEE, MMM d')} | ${format(start, 'p')} - ${format(end, 'p')}`
     }
 
     return `${format(start, 'EEE, MMM d, p')} - ${format(end, 'EEE, MMM d, p')}`
@@ -42,5 +42,36 @@ export function formatCapacity(capacity?: number | null): string {
 
 export function formatLocation(locationName?: string | null, locationAddress?: string | null): string {
   const segments = [locationName, locationAddress].filter(Boolean)
-  return segments.length > 0 ? segments.join(' • ') : 'Location to be announced'
+  return segments.length > 0 ? segments.join(' | ') : 'Location to be announced'
+}
+
+export function formatTicketPrice(ticketPrice?: string | null): string {
+  const value = Number(ticketPrice ?? '0')
+
+  if (!Number.isFinite(value) || value <= 0) {
+    return 'Free'
+  }
+
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value)
+}
+
+export function formatAvailability(availableSpots?: number | null, atCapacity?: boolean): string {
+  if (availableSpots == null) {
+    return 'Open capacity'
+  }
+
+  if (atCapacity) {
+    return 'Capacity reached'
+  }
+
+  if (availableSpots === 1) {
+    return '1 spot left'
+  }
+
+  return `${availableSpots} spots left`
 }

@@ -77,4 +77,40 @@ describe('AuthView', () => {
       expect(router.currentRoute.value.name).toBe('activities')
     })
   })
+
+  it('submits the admin flag during registration', async () => {
+    let capturedPayload: Record<string, unknown> | null = null
+
+    server.use(
+      http.post('http://localhost:8080/api/auth/register', async ({ request }) => {
+        capturedPayload = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ token: 'jwt-token' })
+      }),
+      http.get('http://localhost:8080/api/users/me', () =>
+        HttpResponse.json({ ...sampleUser, role: 'ADMIN' }),
+      ),
+    )
+
+    const user = userEvent.setup()
+
+    await renderRoute({
+      route: '/auth?mode=register',
+      authComponent: AuthView,
+    })
+
+    await user.type(getInput('register-username'), 'admin')
+    await user.type(getInput('register-email'), 'admin@example.com')
+    await user.type(getInput('register-password'), 'password123')
+    await user.type(getInput('register-confirm-password'), 'password123')
+    await user.click(getInput('register-is-admin'))
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+
+    await waitFor(() => {
+      expect(capturedPayload).toMatchObject({
+        username: 'admin',
+        email: 'admin@example.com',
+        isAdmin: true,
+      })
+    })
+  })
 })

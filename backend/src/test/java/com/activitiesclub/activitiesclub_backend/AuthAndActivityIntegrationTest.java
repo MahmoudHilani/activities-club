@@ -2,13 +2,20 @@ package com.activitiesclub.activitiesclub_backend;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,10 +25,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -40,97 +49,159 @@ class AuthAndActivityIntegrationTest {
     }
 
     @Test
-    void registerLoginAndActivityFlowWorksWithBearerToken() throws Exception {
-        mockMvc.perform(post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                    {
-                      "username": "alice",
-                      "email": "Alice@example.com",
-                      "password": "password123"
-                    }
-                    """))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.token").isString());
-
-        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                    {
-                      "email": "ALICE@example.com",
-                      "password": "password123"
-                    }
-                    """))
-            .andExpect(status().isOk())
-            .andReturn();
-
-        String token = readTextField(loginResult, "token");
+    void registerSupportsAdminFlagAndAdminEndpointsRequireAdmin() throws Exception {
+        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        String studentToken = registerAndLogin("alice", "alice@example.com", "password123", false);
 
         mockMvc.perform(get("/api/users/me")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.username").value("alice"))
-            .andExpect(jsonPath("$.email").value("alice@example.com"))
+            .andExpect(jsonPath("$.role").value("ADMIN"));
+
+        mockMvc.perform(get("/api/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + studentToken))
+            .andExpect(status().isOk())
             .andExpect(jsonPath("$.role").value("STUDENT"));
 
-        mockMvc.perform(post("/api/activities")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                    {
-                      "title": "Chess Night",
-                      "description": "Weekly chess meetup",
-                      "startAt": "2026-03-20T18:00:00Z",
-                      "endAt": "2026-03-20T20:00:00Z",
-                      "locationName": "Student Center",
-                      "locationAddress": "Main Campus",
-                      "capacity": 20,
-                      "visibility": "PUBLIC",
-                      "reservationOpensAt": "2026-03-18T18:00:00Z",
-                      "reservationClosesAt": "2026-03-20T17:00:00Z"
-                    }
-                    """))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.title").value("Chess Night"))
-            .andExpect(jsonPath("$.organizer.username").value("alice"))
-            .andExpect(jsonPath("$.status").value("DRAFT"));
-
-        mockMvc.perform(get("/api/activities")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.content", hasSize(1)))
-            .andExpect(jsonPath("$.content[0].title").value("Chess Night"));
-    }
-
-    @Test
-    void publicActivitiesEndpointOnlyReturnsPublishedPublicActivities() throws Exception {
-        String token = registerAndLogin("organizer", "organizer@example.com", "password123");
-        long publishedPublicId = createActivity(token, "Open Mic", "PUBLIC");
-        createActivity(token, "Draft Event", "PUBLIC");
-        long publishedPrivateId = createActivity(token, "Private Planning", "PRIVATE");
-
-        publishActivity(token, publishedPublicId)
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.status").value("PUBLISHED"));
-
-        publishActivity(token, publishedPrivateId)
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.status").value("PUBLISHED"));
-
-        mockMvc.perform(get("/api/activities/public"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.content", hasSize(1)))
-            .andExpect(jsonPath("$.content[0].title").value("Open Mic"));
-    }
-
-    @Test
-    void publishRequiresActivityOwnership() throws Exception {
-        String ownerToken = registerAndLogin("owner", "owner@example.com", "password123");
-        String otherUserToken = registerAndLogin("viewer", "viewer@example.com", "password123");
-        long activityId = createActivity(ownerToken, "Board Games", "PUBLIC");
-
-        publishActivity(otherUserToken, activityId)
+        mockMvc.perform(get("/api/admin/activities")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + studentToken))
             .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/admin/activities")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void adminCanCreateUpdateAndDeleteDraftActivitiesWithImages() throws Exception {
+        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        long activityId = createAdminActivity(adminToken, "Chess Night", "image/png", "poster.png", "PUBLIC", 20, "15.50");
+
+        mockMvc.perform(multipart(HttpMethod.PUT, "/api/admin/activities/{activityId}", activityId)
+                .file(activityJsonPart("Board Game Night", "PRIVATE", 25, "0"))
+                .file(imageFile("image/webp", "updated.webp", "updated-image"))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.title").value("Board Game Night"))
+            .andExpect(jsonPath("$.visibility").value("PRIVATE"))
+            .andExpect(jsonPath("$.ticketPrice").value(0))
+            .andExpect(jsonPath("$.imageUrl").isString());
+
+        mockMvc.perform(delete("/api/admin/activities/{activityId}", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void createValidatesUploadTypeSizeAndTimeWindow() throws Exception {
+        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+
+        mockMvc.perform(multipart("/api/admin/activities")
+                .file(activityJsonPart("Bad Image", "PUBLIC", 20, "10.00"))
+                .file(imageFile("text/plain", "poster.txt", "not-an-image"))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isBadRequest());
+
+        byte[] oversized = new byte[(5 * 1024 * 1024) + 1];
+        mockMvc.perform(multipart("/api/admin/activities")
+                .file(activityJsonPart("Huge Image", "PUBLIC", 20, "10.00"))
+                .file(new MockMultipartFile("image", "big.png", "image/png", oversized))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(multipart("/api/admin/activities")
+                .file(activityJsonPart(Map.of(
+                    "title", "Broken Times",
+                    "ticketPrice", BigDecimal.valueOf(5.00),
+                    "visibility", "PUBLIC",
+                    "startAt", "2026-03-20T20:00:00Z",
+                    "endAt", "2026-03-20T18:00:00Z"
+                )))
+                .file(imageFile("image/png", "poster.png", "poster"))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void publicActivitiesEndpointOnlyReturnsPublishedPublicActivitiesAndIncludesCurrentUserReservationState() throws Exception {
+        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        String studentToken = registerAndLogin("alice", "alice@example.com", "password123", false);
+        long publicActivityId = createAdminActivity(adminToken, "Open Mic", "image/png", "poster.png", "PUBLIC", 2, "0");
+        long privateActivityId = createAdminActivity(adminToken, "Private Planning", "image/png", "poster.png", "PRIVATE", 2, "0");
+
+        publishActivity(adminToken, publicActivityId).andExpect(status().isOk());
+        publishActivity(adminToken, privateActivityId).andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/activities/{activityId}/reservations", publicActivityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + studentToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("RESERVED"));
+
+        mockMvc.perform(get("/api/activities/public")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + studentToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.content", hasSize(1)))
+            .andExpect(jsonPath("$.content[0].title").value("Open Mic"))
+            .andExpect(jsonPath("$.content[0].imageUrl").isString())
+            .andExpect(jsonPath("$.content[0].ticketPrice").value(0))
+            .andExpect(jsonPath("$.content[0].confirmedReservationCount").value(1))
+            .andExpect(jsonPath("$.content[0].currentUserReservationStatus").value("RESERVED"));
+    }
+
+    @Test
+    void waitlistReservationIsPromotedWhenConfirmedReservationIsCancelled() throws Exception {
+        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        String firstStudentToken = registerAndLogin("alice", "alice@example.com", "password123", false);
+        String secondStudentToken = registerAndLogin("bob", "bob@example.com", "password123", false);
+
+        long activityId = createAdminActivity(adminToken, "Workshop", "image/png", "poster.png", "PUBLIC", 1, "25.00");
+        publishActivity(adminToken, activityId).andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/activities/{activityId}/reservations", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + firstStudentToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("RESERVED"));
+
+        mockMvc.perform(post("/api/activities/{activityId}/reservations", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + secondStudentToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("WAITLISTED"))
+            .andExpect(jsonPath("$.waitlistCount").value(1));
+
+        mockMvc.perform(delete("/api/activities/{activityId}/reservations/me", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + firstStudentToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        mockMvc.perform(get("/api/activities/public")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + secondStudentToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.content[0].currentUserReservationStatus").value("RESERVED"))
+            .andExpect(jsonPath("$.content[0].confirmedReservationCount").value(1))
+            .andExpect(jsonPath("$.content[0].waitlistCount").value(0))
+            .andExpect(jsonPath("$.content[0].atCapacity").value(true));
+    }
+
+    @Test
+    void cancelBlocksDeletionAfterReservationHistoryExists() throws Exception {
+        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        String studentToken = registerAndLogin("alice", "alice@example.com", "password123", false);
+
+        long activityId = createAdminActivity(adminToken, "Cinema Night", "image/png", "poster.png", "PUBLIC", 5, "8.00");
+        publishActivity(adminToken, activityId).andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/activities/{activityId}/reservations", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + studentToken))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(delete("/api/admin/activities/{activityId}", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isConflict());
+
+        mockMvc.perform(patch("/api/admin/activities/{activityId}/cancel", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("CANCELLED"));
     }
 
     @Test
@@ -148,25 +219,27 @@ class AuthAndActivityIntegrationTest {
             .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, FRONTEND_ORIGIN))
             .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, org.hamcrest.Matchers.containsString("POST")));
 
-        mockMvc.perform(options("/api/activities")
+        mockMvc.perform(options("/api/admin/activities")
                 .header(HttpHeaders.ORIGIN, FRONTEND_ORIGIN)
-                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "PUT")
                 .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "authorization,content-type"))
             .andExpect(status().isOk())
             .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, FRONTEND_ORIGIN))
+            .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, org.hamcrest.Matchers.containsString("PUT")))
             .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, org.hamcrest.Matchers.containsString("authorization")));
     }
 
-    private String registerAndLogin(String username, String email, String password) throws Exception {
+    private String registerAndLogin(String username, String email, String password, boolean isAdmin) throws Exception {
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
                       "username": "%s",
                       "email": "%s",
-                      "password": "%s"
+                      "password": "%s",
+                      "isAdmin": %s
                     }
-                    """.formatted(username, email, password)))
+                    """.formatted(username, email, password, isAdmin)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.token").isString());
 
@@ -184,24 +257,19 @@ class AuthAndActivityIntegrationTest {
         return readTextField(loginResult, "token");
     }
 
-    private long createActivity(String token, String title, String visibility) throws Exception {
-        MvcResult createResult = mockMvc.perform(post("/api/activities")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                    {
-                      "title": "%s",
-                      "description": "Activity description",
-                      "startAt": "2026-03-20T18:00:00Z",
-                      "endAt": "2026-03-20T20:00:00Z",
-                      "locationName": "Student Center",
-                      "locationAddress": "Main Campus",
-                      "capacity": 20,
-                      "visibility": "%s",
-                      "reservationOpensAt": "2026-03-18T18:00:00Z",
-                      "reservationClosesAt": "2026-03-20T17:00:00Z"
-                    }
-                    """.formatted(title, visibility)))
+    private long createAdminActivity(
+        String token,
+        String title,
+        String imageContentType,
+        String filename,
+        String visibility,
+        int capacity,
+        String ticketPrice
+    ) throws Exception {
+        MvcResult createResult = mockMvc.perform(multipart("/api/admin/activities")
+                .file(activityJsonPart(title, visibility, capacity, ticketPrice))
+                .file(imageFile(imageContentType, filename, "sample-image"))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.title", is(title)))
             .andReturn();
@@ -209,8 +277,46 @@ class AuthAndActivityIntegrationTest {
         return readLongField(createResult, "id");
     }
 
+    private MockMultipartFile activityJsonPart(String title, String visibility, int capacity, String ticketPrice) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("title", title);
+        payload.put("description", "Activity description");
+        payload.put("startAt", "2026-03-20T18:00:00Z");
+        payload.put("endAt", "2026-03-20T20:00:00Z");
+        payload.put("locationName", "Student Center");
+        payload.put("locationAddress", "Main Campus");
+        payload.put("capacity", capacity);
+        payload.put("ticketPrice", new BigDecimal(ticketPrice));
+        payload.put("visibility", visibility);
+        payload.put("reservationOpensAt", "2026-03-10T18:00:00Z");
+        payload.put("reservationClosesAt", "2026-03-20T17:00:00Z");
+        return activityJsonPart(payload);
+    }
+
+    private MockMultipartFile activityJsonPart(Map<String, Object> payload) {
+        try {
+            return new MockMultipartFile(
+                "activity",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                OBJECT_MAPPER.writeValueAsBytes(payload)
+            );
+        } catch (Exception exception) {
+            throw new IllegalStateException("Could not serialize test activity payload", exception);
+        }
+    }
+
+    private MockMultipartFile imageFile(String contentType, String filename, String body) {
+        return new MockMultipartFile(
+            "image",
+            filename,
+            contentType,
+            body.getBytes(StandardCharsets.UTF_8)
+        );
+    }
+
     private org.springframework.test.web.servlet.ResultActions publishActivity(String token, long activityId) throws Exception {
-        return mockMvc.perform(patch("/api/activities/{activityId}/publish", activityId)
+        return mockMvc.perform(patch("/api/admin/activities/{activityId}/publish", activityId)
             .header(HttpHeaders.AUTHORIZATION, "Bearer " + token));
     }
 

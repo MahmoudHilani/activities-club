@@ -10,6 +10,7 @@ export interface RegisterPayload {
   username: string
   email: string
   password: string
+  isAdmin: boolean
 }
 
 export async function login(payload: LoginPayload): Promise<AuthResponse> {

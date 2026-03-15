@@ -18,6 +18,10 @@ spring:
         format_sql: true
   flyway:
     enabled: true
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 7MB
 
 app:
   cors:
@@ -25,3 +29,5 @@ app:
   jwt:
     secret: ${JWT_SECRET}
     expiration-ms: ${JWT_EXPIRATION_MS:900000}
+  uploads:
+    dir: ${UPLOADS_DIR:./uploads}

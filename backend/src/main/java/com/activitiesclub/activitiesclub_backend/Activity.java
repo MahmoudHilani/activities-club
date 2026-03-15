@@ -1,5 +1,6 @@
 package com.activitiesclub.activitiesclub_backend;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -51,6 +52,16 @@ public class Activity {
     @Getter
     @Setter
     private Integer capacity;
+
+    @Getter
+    @Setter
+    @Column(name = "image_path", nullable = false, length = 255)
+    private String imagePath = "placeholder-activity.svg";
+
+    @Getter
+    @Setter
+    @Column(name = "ticket_price", nullable = false, precision = 10, scale = 2)
+    private BigDecimal ticketPrice = BigDecimal.ZERO;
 
     @Getter
     @Setter

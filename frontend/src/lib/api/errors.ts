@@ -50,3 +50,11 @@ export function mapRegisterError(error: unknown): string {
 export function mapActivitiesError(error: unknown): string {
   return getApiMessage(error) ?? 'We could not load activities right now.'
 }
+
+export function mapAdminActivityError(error: unknown): string {
+  return getApiMessage(error) ?? 'We could not save the activity right now.'
+}
+
+export function mapReservationError(error: unknown): string {
+  return getApiMessage(error) ?? 'We could not update your reservation right now.'
+}

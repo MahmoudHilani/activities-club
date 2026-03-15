@@ -26,12 +26,28 @@ export interface ActivityResponse {
   locationName: string | null
   locationAddress: string | null
   capacity: number | null
+  imageUrl: string
+  ticketPrice: string
   status: 'DRAFT' | 'PUBLISHED' | 'CANCELLED' | 'COMPLETED'
   visibility: 'PUBLIC' | 'PRIVATE'
   reservationOpensAt: string | null
   reservationClosesAt: string | null
+  confirmedReservationCount: number
+  waitlistCount: number
+  availableSpots: number | null
+  atCapacity: boolean
+  currentUserReservationStatus: 'RESERVED' | 'WAITLISTED' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW' | null
   createdAt: string
   updatedAt: string
+}
+
+export interface ReservationResponse {
+  activityId: number
+  status: 'RESERVED' | 'WAITLISTED' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW'
+  confirmedReservationCount: number
+  waitlistCount: number
+  availableSpots: number | null
+  atCapacity: boolean
 }
 
 export interface PageResponse<T> {
