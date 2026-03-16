@@ -35,6 +35,15 @@ const router = createRouter({
         requiresAdmin: true,
       },
     },
+    {
+      path: '/admin/activities/:activityId/reservations',
+      name: 'admin-activity-reservations',
+      component: () => import('@/views/AdminActivityReservationsView.vue'),
+      meta: {
+        title: 'Activity reservations',
+        requiresAdmin: true,
+      },
+    },
   ],
 })
 

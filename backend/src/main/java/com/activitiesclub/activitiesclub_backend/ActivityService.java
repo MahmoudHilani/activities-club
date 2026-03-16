@@ -1,7 +1,9 @@
 package com.activitiesclub.activitiesclub_backend;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.activitiesclub.activitiesclub_backend.auth.AuthenticatedUser;
+import com.activitiesclub.activitiesclub_backend.dto.AdminActivityReservationEntryResponse;
+import com.activitiesclub.activitiesclub_backend.dto.AdminActivityReservationsResponse;
 import com.activitiesclub.activitiesclub_backend.dto.ActivityResponse;
 import com.activitiesclub.activitiesclub_backend.dto.ActivityUpsertRequest;
 
@@ -44,6 +48,18 @@ public class ActivityService {
     @Transactional(readOnly = true)
     public Page<ActivityResponse> listAdmin(Pageable pageable) {
         return activityRepository.findAllByOrderByCreatedAtDesc(pageable).map(activity -> toResponse(activity, null));
+    }
+
+    @Transactional(readOnly = true)
+    public AdminActivityReservationsResponse getAdminReservations(Long activityId) {
+        Activity activity = getActivityById(activityId);
+        List<AdminActivityReservationEntryResponse> reservations = reservationRepository.findAllByActivityIdWithUser(activityId)
+            .stream()
+            .sorted(adminReservationComparator())
+            .map(AdminActivityReservationEntryResponse::from)
+            .toList();
+
+        return new AdminActivityReservationsResponse(toResponse(activity, null), reservations);
     }
 
     @Transactional
@@ -227,5 +243,40 @@ public class ActivityService {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private Comparator<ActivityReservation> adminReservationComparator() {
+        return (left, right) -> {
+            int statusComparison = Integer.compare(statusRank(left.getStatus()), statusRank(right.getStatus()));
+            if (statusComparison != 0) {
+                return statusComparison;
+            }
+
+            if (left.getStatus() == ReservationStatus.CANCELLED && right.getStatus() == ReservationStatus.CANCELLED) {
+                Comparator<Instant> cancelledAtComparator = Comparator.nullsLast(Comparator.reverseOrder());
+                int cancelledComparison = cancelledAtComparator.compare(left.getCancelledAt(), right.getCancelledAt());
+                if (cancelledComparison != 0) {
+                    return cancelledComparison;
+                }
+            }
+
+            Comparator<Instant> reservedAtComparator = Comparator.nullsLast(Comparator.naturalOrder());
+            int reservedAtComparison = reservedAtComparator.compare(left.getReservedAt(), right.getReservedAt());
+            if (reservedAtComparison != 0) {
+                return reservedAtComparison;
+            }
+
+            return Comparator.nullsLast(Comparator.<Long>naturalOrder()).compare(left.getId(), right.getId());
+        };
+    }
+
+    private int statusRank(ReservationStatus status) {
+        return switch (status) {
+            case RESERVED -> 0;
+            case WAITLISTED -> 1;
+            case CANCELLED -> 2;
+            case ATTENDED -> 3;
+            case NO_SHOW -> 4;
+        };
     }
 }

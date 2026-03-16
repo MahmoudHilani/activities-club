@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/api/client'
 import type {
+  AdminActivityReservationsResponse,
   ActivityResponse,
   PageResponse,
   ReservationResponse,
@@ -103,6 +104,16 @@ export async function cancelAdminActivity(activityId: number): Promise<ActivityR
 
 export async function deleteAdminActivity(activityId: number): Promise<void> {
   await apiClient.delete(`/api/admin/activities/${activityId}`)
+}
+
+export async function getAdminActivityReservations(
+  activityId: number,
+): Promise<AdminActivityReservationsResponse> {
+  const { data } = await apiClient.get<AdminActivityReservationsResponse>(
+    `/api/admin/activities/${activityId}/reservations`,
+  )
+
+  return data
 }
 
 export async function reserveActivity(activityId: number): Promise<ReservationResponse> {

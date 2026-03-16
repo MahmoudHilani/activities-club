@@ -31,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.activitiesclub.activitiesclub_backend.auth.AuthenticatedUser;
+import com.activitiesclub.activitiesclub_backend.dto.AdminActivityReservationsResponse;
 import com.activitiesclub.activitiesclub_backend.dto.ActivityResponse;
 import com.activitiesclub.activitiesclub_backend.dto.ActivityUpsertRequest;
 
@@ -50,6 +51,11 @@ public class AdminActivityController {
     @GetMapping
     public Page<ActivityResponse> list(@PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         return activityService.listAdmin(pageable);
+    }
+
+    @GetMapping("/{activityId}/reservations")
+    public AdminActivityReservationsResponse reservations(@PathVariable Long activityId) {
+        return activityService.getAdminReservations(activityId);
     }
 
     @PostMapping(consumes = "multipart/form-data")

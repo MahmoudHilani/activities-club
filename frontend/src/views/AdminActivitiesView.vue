@@ -2,9 +2,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { LoaderCircle, PencilLine, Plus, Trash2 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, reactive, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 
 import { Alert } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
+import { buttonVariants, Button } from '@/components/ui/button'
 import {
   cancelAdminActivity,
   createAdminActivity,
@@ -255,6 +256,12 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="flex flex-wrap gap-2">
+              <RouterLink
+                :class="buttonVariants({ variant: 'outline', size: 'sm' })"
+                :to="{ name: 'admin-activity-reservations', params: { activityId: activity.id } }"
+              >
+                View reservations
+              </RouterLink>
               <Button size="sm" variant="outline" @click="editActivity(activity)">
                 <PencilLine class="h-4 w-4" />
                 Edit

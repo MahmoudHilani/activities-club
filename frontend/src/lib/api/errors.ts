@@ -56,5 +56,11 @@ export function mapAdminActivityError(error: unknown): string {
 }
 
 export function mapReservationError(error: unknown): string {
+  const status = getApiStatus(error)
+
+  if (status === 401) {
+    return 'Your session has expired. Please log in again to reserve a place.'
+  }
+
   return getApiMessage(error) ?? 'We could not update your reservation right now.'
 }

@@ -1,4 +1,10 @@
-import type { ActivityResponse, PageResponse, UserResponse } from '@/lib/api/types'
+import type {
+  ActivityResponse,
+  AdminActivityReservationEntryResponse,
+  AdminActivityReservationsResponse,
+  PageResponse,
+  UserResponse,
+} from '@/lib/api/types'
 
 export const sampleUser: UserResponse = {
   id: 1,
@@ -54,6 +60,33 @@ export function buildPage<T>(
     first: true,
     last: true,
     empty: content.length === 0,
+    ...overrides,
+  }
+}
+
+export function buildAdminReservationEntry(
+  overrides: Partial<AdminActivityReservationEntryResponse> = {},
+): AdminActivityReservationEntryResponse {
+  return {
+    id: 1,
+    status: 'RESERVED',
+    reservedAt: '2026-03-20T18:00:00Z',
+    cancelledAt: null,
+    user: {
+      id: 1,
+      username: 'alice',
+      email: 'alice@example.com',
+    },
+    ...overrides,
+  }
+}
+
+export function buildAdminActivityReservationsResponse(
+  overrides: Partial<AdminActivityReservationsResponse> = {},
+): AdminActivityReservationsResponse {
+  return {
+    activity: buildActivity(),
+    reservations: [buildAdminReservationEntry()],
     ...overrides,
   }
 }

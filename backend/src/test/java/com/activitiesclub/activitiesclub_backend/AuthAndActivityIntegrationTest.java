@@ -183,6 +183,71 @@ class AuthAndActivityIntegrationTest {
     }
 
     @Test
+    void adminCanFetchReservationRosterForActivity() throws Exception {
+        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        String firstStudentToken = registerAndLogin("alice", "alice@example.com", "password123", false);
+        String secondStudentToken = registerAndLogin("bob", "bob@example.com", "password123", false);
+        String thirdStudentToken = registerAndLogin("cara", "cara@example.com", "password123", false);
+
+        long activityId = createAdminActivity(adminToken, "Workshop", "image/png", "poster.png", "PUBLIC", 1, "25.00");
+        publishActivity(adminToken, activityId).andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/activities/{activityId}/reservations", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + firstStudentToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("RESERVED"));
+
+        mockMvc.perform(post("/api/activities/{activityId}/reservations", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + secondStudentToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("WAITLISTED"));
+
+        mockMvc.perform(post("/api/activities/{activityId}/reservations", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + thirdStudentToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("WAITLISTED"));
+
+        mockMvc.perform(delete("/api/activities/{activityId}/reservations/me", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + firstStudentToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        mockMvc.perform(get("/api/admin/activities/{activityId}/reservations", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.activity.id").value(activityId))
+            .andExpect(jsonPath("$.activity.confirmedReservationCount").value(1))
+            .andExpect(jsonPath("$.activity.waitlistCount").value(1))
+            .andExpect(jsonPath("$.reservations", hasSize(3)))
+            .andExpect(jsonPath("$.reservations[0].status").value("RESERVED"))
+            .andExpect(jsonPath("$.reservations[0].user.username").value("bob"))
+            .andExpect(jsonPath("$.reservations[0].user.email").value("bob@example.com"))
+            .andExpect(jsonPath("$.reservations[0].reservedAt").isString())
+            .andExpect(jsonPath("$.reservations[1].status").value("WAITLISTED"))
+            .andExpect(jsonPath("$.reservations[1].user.username").value("cara"))
+            .andExpect(jsonPath("$.reservations[1].user.email").value("cara@example.com"))
+            .andExpect(jsonPath("$.reservations[2].status").value("CANCELLED"))
+            .andExpect(jsonPath("$.reservations[2].user.username").value("alice"))
+            .andExpect(jsonPath("$.reservations[2].user.email").value("alice@example.com"))
+            .andExpect(jsonPath("$.reservations[2].cancelledAt").isString());
+    }
+
+    @Test
+    void reservationRosterRequiresAdminAndReturnsNotFoundForUnknownActivity() throws Exception {
+        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        String studentToken = registerAndLogin("alice", "alice@example.com", "password123", false);
+        long activityId = createAdminActivity(adminToken, "Chess Night", "image/png", "poster.png", "PUBLIC", 10, "0");
+
+        mockMvc.perform(get("/api/admin/activities/{activityId}/reservations", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + studentToken))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/admin/activities/{activityId}/reservations", Long.MAX_VALUE)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
     void cancelBlocksDeletionAfterReservationHistoryExists() throws Exception {
         String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
         String studentToken = registerAndLogin("alice", "alice@example.com", "password123", false);

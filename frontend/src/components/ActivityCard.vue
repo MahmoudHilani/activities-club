@@ -2,12 +2,12 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { CalendarDays, Clock3, LoaderCircle, MapPin, Ticket, Users } from 'lucide-vue-next'
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { cancelReservation, reserveActivity } from '@/lib/api/activities'
-import { mapReservationError } from '@/lib/api/errors'
+import { getApiStatus, mapReservationError } from '@/lib/api/errors'
 import type { ActivityResponse } from '@/lib/api/types'
 import {
   formatAvailability,
@@ -25,6 +25,7 @@ const props = defineProps<{
 
 const queryClient = useQueryClient()
 const sessionStore = useSessionStore()
+const router = useRouter()
 
 const scheduleLabel = computed(() => formatDateRange(props.activity.startAt, props.activity.endAt))
 const locationLabel = computed(() =>
@@ -54,6 +55,7 @@ const reserveMutation = useMutation(() => ({
   onSuccess: async () => {
     await queryClient.invalidateQueries({ queryKey: ['public-activities'] })
   },
+  onError: handleUnauthorizedReservationError,
 }))
 
 const cancelMutation = useMutation(() => ({
@@ -61,6 +63,7 @@ const cancelMutation = useMutation(() => ({
   onSuccess: async () => {
     await queryClient.invalidateQueries({ queryKey: ['public-activities'] })
   },
+  onError: handleUnauthorizedReservationError,
 }))
 
 const reservationError = computed(() => {
@@ -87,6 +90,16 @@ const statusBadgeLabel = computed(() => {
 
   return ''
 })
+
+async function handleUnauthorizedReservationError(error: unknown): Promise<void> {
+  if (getApiStatus(error) !== 401) {
+    return
+  }
+
+  sessionStore.clearSession()
+  await queryClient.invalidateQueries({ queryKey: ['public-activities'] })
+  await router.push({ name: 'auth', query: { mode: 'login' } })
+}
 </script>
 
 <template>

@@ -4,9 +4,10 @@ import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 
 import ActivitiesView from '@/views/ActivitiesView.vue'
-import { buildActivity, buildPage } from '@/test/fixtures'
+import { sampleUser, buildActivity, buildPage } from '@/test/fixtures'
 import { renderRoute } from '@/test/render'
 import { server } from '@/test/server'
+import { useSessionStore } from '@/stores/session'
 
 describe('ActivitiesView', () => {
   it('renders fallback text for nullable activity fields', async () => {
@@ -124,5 +125,34 @@ describe('ActivitiesView', () => {
 
     expect(await screen.findByText('We could not load activities right now.')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
+  })
+
+  it('clears the session and redirects to login when reservation returns 401', async () => {
+    server.use(
+      http.get('http://localhost:8080/api/activities/public', () =>
+        HttpResponse.json(buildPage([buildActivity()])),
+      ),
+      http.post('http://localhost:8080/api/activities/1/reservations', () =>
+        new HttpResponse(null, { status: 401 }),
+      ),
+    )
+
+    const user = userEvent.setup()
+    const { pinia, router } = await renderRoute({
+      route: '/activities',
+      activitiesComponent: ActivitiesView,
+    })
+
+    const sessionStore = useSessionStore(pinia)
+    sessionStore.token = 'expired-token'
+    sessionStore.user = sampleUser
+    sessionStore.isHydrated = true
+
+    await user.click(await screen.findByRole('button', { name: 'Reserve seat' }))
+
+    await waitFor(() => {
+      expect(sessionStore.isAuthenticated).toBe(false)
+      expect(router.currentRoute.value.name).toBe('auth')
+    })
   })
 })

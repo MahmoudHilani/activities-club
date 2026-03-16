@@ -2,6 +2,8 @@ export interface AuthResponse {
   token: string
 }
 
+export type ReservationStatus = 'RESERVED' | 'WAITLISTED' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW'
+
 export interface UserResponse {
   id: number
   username: string
@@ -36,18 +38,37 @@ export interface ActivityResponse {
   waitlistCount: number
   availableSpots: number | null
   atCapacity: boolean
-  currentUserReservationStatus: 'RESERVED' | 'WAITLISTED' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW' | null
+  currentUserReservationStatus: ReservationStatus | null
   createdAt: string
   updatedAt: string
 }
 
 export interface ReservationResponse {
   activityId: number
-  status: 'RESERVED' | 'WAITLISTED' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW'
+  status: ReservationStatus
   confirmedReservationCount: number
   waitlistCount: number
   availableSpots: number | null
   atCapacity: boolean
+}
+
+export interface AdminActivityReservationUserResponse {
+  id: number
+  username: string
+  email: string
+}
+
+export interface AdminActivityReservationEntryResponse {
+  id: number
+  status: ReservationStatus
+  reservedAt: string
+  cancelledAt: string | null
+  user: AdminActivityReservationUserResponse
+}
+
+export interface AdminActivityReservationsResponse {
+  activity: ActivityResponse
+  reservations: AdminActivityReservationEntryResponse[]
 }
 
 export interface PageResponse<T> {

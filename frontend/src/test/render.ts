@@ -11,6 +11,7 @@ interface RenderRouteOptions {
   authComponent?: Component
   activitiesComponent?: Component
   adminComponent?: Component
+  adminReservationsComponent?: Component
 }
 
 export async function renderRoute({
@@ -18,6 +19,7 @@ export async function renderRoute({
   authComponent = PlaceholderView,
   activitiesComponent = PlaceholderView,
   adminComponent = PlaceholderView,
+  adminReservationsComponent = PlaceholderView,
 }: RenderRouteOptions) {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -36,6 +38,11 @@ export async function renderRoute({
         path: '/admin/activities',
         name: 'admin-activities',
         component: adminComponent,
+      },
+      {
+        path: '/admin/activities/:activityId/reservations',
+        name: 'admin-activity-reservations',
+        component: adminReservationsComponent,
       },
     ],
   })

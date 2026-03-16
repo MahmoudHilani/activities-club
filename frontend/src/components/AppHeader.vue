@@ -14,6 +14,9 @@ const currentUserLabel = computed(() =>
   sessionStore.user ? `Signed in as ${sessionStore.user.username}` : 'Member access',
 )
 const isAdmin = computed(() => sessionStore.user?.role === 'ADMIN')
+const isAdminRoute = computed(() =>
+  route.name === 'admin-activities' || route.name === 'admin-activity-reservations',
+)
 
 function navClass(isActive: boolean): string {
   return cn(
@@ -46,7 +49,7 @@ function navClass(isActive: boolean): string {
         </RouterLink>
         <RouterLink
           v-if="isAdmin"
-          :class="navClass(route.name === 'admin-activities')"
+          :class="navClass(isAdminRoute)"
           :to="{ name: 'admin-activities' }"
         >
           Admin
