@@ -4,8 +4,10 @@ import { LoaderCircle, PencilLine, Plus, Trash2 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import DateTimeField from '@/components/DateTimeField.vue'
 import { Alert } from '@/components/ui/alert'
 import { buttonVariants, Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   cancelAdminActivity,
   createAdminActivity,
@@ -52,6 +54,11 @@ const form = reactive<ActivityFormState>({
   reservationClosesAt: '',
   imageFile: null,
 })
+
+const visibilityOptions = [
+  { label: 'Public', value: 'PUBLIC' },
+  { label: 'Private', value: 'PRIVATE' },
+] as const
 
 const activitiesQuery = useQuery(() => ({
   queryKey: ['admin-activities'],
@@ -340,11 +347,11 @@ onBeforeUnmount(() => {
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="space-y-2">
             <span class="text-sm font-semibold text-foreground">Start time</span>
-            <input v-model="form.startAt" class="w-full rounded-2xl border border-border bg-white/70 px-4 py-3" type="datetime-local" />
+            <DateTimeField v-model="form.startAt" placeholder="Select the activity start" />
           </label>
           <label class="space-y-2">
             <span class="text-sm font-semibold text-foreground">End time</span>
-            <input v-model="form.endAt" class="w-full rounded-2xl border border-border bg-white/70 px-4 py-3" type="datetime-local" />
+            <DateTimeField v-model="form.endAt" placeholder="Select the activity end" />
           </label>
         </div>
 
@@ -366,21 +373,27 @@ onBeforeUnmount(() => {
           </label>
           <label class="space-y-2">
             <span class="text-sm font-semibold text-foreground">Visibility</span>
-            <select v-model="form.visibility" class="w-full rounded-2xl border border-border bg-white/70 px-4 py-3">
-              <option value="PUBLIC">Public</option>
-              <option value="PRIVATE">Private</option>
-            </select>
+            <Select v-model="form.visibility">
+              <SelectTrigger aria-label="Visibility">
+                <SelectValue placeholder="Select visibility" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in visibilityOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </label>
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="space-y-2">
             <span class="text-sm font-semibold text-foreground">Reservations open</span>
-            <input v-model="form.reservationOpensAt" class="w-full rounded-2xl border border-border bg-white/70 px-4 py-3" type="datetime-local" />
+            <DateTimeField v-model="form.reservationOpensAt" placeholder="Select the opening time" />
           </label>
           <label class="space-y-2">
             <span class="text-sm font-semibold text-foreground">Reservations close</span>
-            <input v-model="form.reservationClosesAt" class="w-full rounded-2xl border border-border bg-white/70 px-4 py-3" type="datetime-local" />
+            <DateTimeField v-model="form.reservationClosesAt" placeholder="Select the closing time" />
           </label>
         </div>
 
