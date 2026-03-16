@@ -4,52 +4,37 @@ import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 
 import AdminActivitiesView from '@/views/AdminActivitiesView.vue'
+import AdminActivityEditorView from '@/views/AdminActivityEditorView.vue'
 import { buildActivity, buildPage } from '@/test/fixtures'
 import { renderRoute } from '@/test/render'
 import { server } from '@/test/server'
 
 describe('AdminActivitiesView', () => {
-  it('submits visibility changes through the shadcn select', async () => {
+  it('navigates from activity management to the edit page', async () => {
     server.use(
       http.get('http://localhost:8080/api/admin/activities', () =>
-        HttpResponse.json(buildPage([])),
+        HttpResponse.json(buildPage([buildActivity()])),
       ),
-      http.post('http://localhost:8080/api/admin/activities', () => {
-        return HttpResponse.json(
-          buildActivity({
-            id: 2,
-            title: 'Members Night',
-            status: 'DRAFT',
-            visibility: 'PRIVATE',
-          }),
-        )
-      }),
+      http.get('http://localhost:8080/api/admin/activities/1', () =>
+        HttpResponse.json(buildActivity()),
+      ),
     )
 
     const user = userEvent.setup()
-
-    await renderRoute({
+    const { router } = await renderRoute({
       route: '/admin/activities',
       adminComponent: AdminActivitiesView,
+      adminEditorComponent: AdminActivityEditorView,
     })
 
-    await screen.findByRole('heading', { name: 'New activity draft' })
+    expect(await screen.findByText('Chess Night')).toBeTruthy()
 
-    await user.type(screen.getByLabelText('Title'), 'Members Night')
-    await user.upload(
-      screen.getByLabelText('Activity image'),
-      new File(['image-bytes'], 'members-night.png', { type: 'image/png' }),
-    )
-
-    await user.click(screen.getByRole('combobox', { name: 'Visibility' }))
-    await user.click(await screen.findByRole('option', { name: 'Private' }))
-    expect(screen.getByRole('combobox', { name: 'Visibility' }).textContent).toContain('Private')
-
-    await user.click(screen.getByRole('button', { name: 'Create activity draft' }))
+    await user.click(screen.getByRole('link', { name: /Edit details/i }))
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Members Night' })).toBeTruthy()
-      expect(screen.getByRole('combobox', { name: 'Visibility' }).textContent).toContain('Private')
+      expect(router.currentRoute.value.fullPath).toBe('/admin/activities/1/edit')
     })
+
+    expect(await screen.findByRole('heading', { name: 'Chess Night' })).toBeTruthy()
   })
 })

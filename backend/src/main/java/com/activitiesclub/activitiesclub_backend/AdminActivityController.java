@@ -53,6 +53,11 @@ public class AdminActivityController {
         return activityService.listAdmin(pageable);
     }
 
+    @GetMapping("/{activityId}")
+    public ActivityResponse activity(@PathVariable Long activityId) {
+        return activityService.getAdminActivity(activityId);
+    }
+
     @GetMapping("/{activityId}/reservations")
     public AdminActivityReservationsResponse reservations(@PathVariable Long activityId) {
         return activityService.getAdminReservations(activityId);

@@ -14,9 +14,7 @@ const currentUserLabel = computed(() =>
   sessionStore.user ? `Signed in as ${sessionStore.user.username}` : 'Member access',
 )
 const isAdmin = computed(() => sessionStore.user?.role === 'ADMIN')
-const isAdminRoute = computed(() =>
-  route.name === 'admin-activities' || route.name === 'admin-activity-reservations',
-)
+const isAdminRoute = computed(() => route.path.startsWith('/admin/activities'))
 
 function navClass(isActive: boolean): string {
   return cn(
@@ -52,7 +50,7 @@ function navClass(isActive: boolean): string {
           :class="navClass(isAdminRoute)"
           :to="{ name: 'admin-activities' }"
         >
-          Admin
+          Manage
         </RouterLink>
       </div>
 

@@ -91,7 +91,7 @@ function formatTimestamp(value?: string | null): string {
         :to="{ name: 'admin-activities' }"
       >
         <ArrowLeft class="h-4 w-4" />
-        Back to admin dashboard
+        Back to activity management
       </RouterLink>
 
       <Alert v-if="reservationsQuery.isError.value" variant="destructive">

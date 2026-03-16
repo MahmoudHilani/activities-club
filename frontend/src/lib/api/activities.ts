@@ -63,6 +63,12 @@ export async function getAdminActivities({
   return data
 }
 
+export async function getAdminActivity(activityId: number): Promise<ActivityResponse> {
+  const { data } = await apiClient.get<ActivityResponse>(`/api/admin/activities/${activityId}`)
+
+  return data
+}
+
 export async function createAdminActivity(
   payload: ActivityUpsertPayload,
   image: File,

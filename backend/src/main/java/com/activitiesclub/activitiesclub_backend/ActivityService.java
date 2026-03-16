@@ -51,6 +51,11 @@ public class ActivityService {
     }
 
     @Transactional(readOnly = true)
+    public ActivityResponse getAdminActivity(Long activityId) {
+        return toResponse(getActivityById(activityId), null);
+    }
+
+    @Transactional(readOnly = true)
     public AdminActivityReservationsResponse getAdminReservations(Long activityId) {
         Activity activity = getActivityById(activityId);
         List<AdminActivityReservationEntryResponse> reservations = reservationRepository.findAllByActivityIdWithUser(activityId)
