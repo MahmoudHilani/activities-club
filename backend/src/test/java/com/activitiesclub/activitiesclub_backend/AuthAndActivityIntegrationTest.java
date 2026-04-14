@@ -114,8 +114,8 @@ class AuthAndActivityIntegrationTest {
                     "title", "Broken Times",
                     "ticketPrice", BigDecimal.valueOf(5.00),
                     "visibility", "PUBLIC",
-                    "startAt", "2026-03-20T20:00:00Z",
-                    "endAt", "2026-03-20T18:00:00Z"
+                    "startAt", "2030-03-20T20:00:00Z",
+                    "endAt", "2030-03-20T18:00:00Z"
                 )))
                 .file(imageFile("image/png", "poster.png", "poster"))
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
@@ -146,6 +146,83 @@ class AuthAndActivityIntegrationTest {
             .andExpect(jsonPath("$.content[0].ticketPrice").value(0))
             .andExpect(jsonPath("$.content[0].confirmedReservationCount").value(1))
             .andExpect(jsonPath("$.content[0].currentUserReservationStatus").value("RESERVED"));
+    }
+
+    @Test
+    void publicActivityDetailEndpointReturnsPublishedPublicActivityForAnonymousUsers() throws Exception {
+        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        long activityId = createAdminActivity(adminToken, "Open Mic", "image/png", "poster.png", "PUBLIC", 2, "0");
+
+        publishActivity(adminToken, activityId).andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/activities/{activityId}", activityId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(activityId))
+            .andExpect(jsonPath("$.title").value("Open Mic"))
+            .andExpect(jsonPath("$.imageUrl").isString())
+            .andExpect(jsonPath("$.currentUserReservationStatus").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    void publicActivityDetailEndpointIgnoresInvalidBearerTokenAndFallsBackToAnonymous() throws Exception {
+        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        long activityId = createAdminActivity(adminToken, "Open Mic", "image/png", "poster.png", "PUBLIC", 2, "0");
+
+        publishActivity(adminToken, activityId).andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/activities/{activityId}", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer expired-or-invalid-token"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(activityId))
+            .andExpect(jsonPath("$.currentUserReservationStatus").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    void publicActivityDetailEndpointIncludesCurrentUserReservationStateForAuthenticatedUsers() throws Exception {
+        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        String studentToken = registerAndLogin("alice", "alice@example.com", "password123", false);
+        long activityId = createAdminActivity(adminToken, "Workshop", "image/png", "poster.png", "PUBLIC", 2, "0");
+
+        publishActivity(adminToken, activityId).andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/activities/{activityId}/reservations", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + studentToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("RESERVED"));
+
+        mockMvc.perform(get("/api/activities/{activityId}", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + studentToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(activityId))
+            .andExpect(jsonPath("$.confirmedReservationCount").value(1))
+            .andExpect(jsonPath("$.currentUserReservationStatus").value("RESERVED"));
+    }
+
+    @Test
+    void publicActivityDetailEndpointReturnsNotFoundForNonPublicActivities() throws Exception {
+        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        long publicActivityId = createAdminActivity(adminToken, "Cancelled Event", "image/png", "poster.png", "PUBLIC", 2, "0");
+        long privateActivityId = createAdminActivity(adminToken, "Private Planning", "image/png", "poster.png", "PRIVATE", 2, "0");
+        long draftActivityId = createAdminActivity(adminToken, "Draft Workshop", "image/png", "poster.png", "PUBLIC", 2, "0");
+
+        publishActivity(adminToken, publicActivityId).andExpect(status().isOk());
+        publishActivity(adminToken, privateActivityId).andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/admin/activities/{activityId}/cancel", publicActivityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/activities/{activityId}", privateActivityId))
+            .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/activities/{activityId}", draftActivityId))
+            .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/activities/{activityId}", publicActivityId))
+            .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/activities/{activityId}", Long.MAX_VALUE))
+            .andExpect(status().isNotFound());
     }
 
     @Test
@@ -346,15 +423,15 @@ class AuthAndActivityIntegrationTest {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("title", title);
         payload.put("description", "Activity description");
-        payload.put("startAt", "2026-03-20T18:00:00Z");
-        payload.put("endAt", "2026-03-20T20:00:00Z");
+        payload.put("startAt", "2030-03-20T18:00:00Z");
+        payload.put("endAt", "2030-03-20T20:00:00Z");
         payload.put("locationName", "Student Center");
         payload.put("locationAddress", "Main Campus");
         payload.put("capacity", capacity);
         payload.put("ticketPrice", new BigDecimal(ticketPrice));
         payload.put("visibility", visibility);
-        payload.put("reservationOpensAt", "2026-03-10T18:00:00Z");
-        payload.put("reservationClosesAt", "2026-03-20T17:00:00Z");
+        payload.put("reservationOpensAt", "2026-01-10T18:00:00Z");
+        payload.put("reservationClosesAt", "2030-03-20T17:00:00Z");
         return activityJsonPart(payload);
     }
 

@@ -7,7 +7,13 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import DateTimeField from '@/components/DateTimeField.vue'
 import { Alert } from '@/components/ui/alert'
 import { buttonVariants, Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   createAdminActivity,
   getAdminActivity,
@@ -80,7 +86,9 @@ const previewLocationLabel = computed(() => {
   return `${form.locationName || 'Location name pending'}${form.locationAddress ? `, ${form.locationAddress}` : ''}`
 })
 const editorHeading = computed(() =>
-  isEditing.value ? currentActivity.value?.title || 'Edit activity details' : 'Create a new activity draft',
+  isEditing.value
+    ? currentActivity.value?.title || 'Edit activity details'
+    : 'Create a new activity draft',
 )
 const editorSubheading = computed(() =>
   isEditing.value
@@ -256,10 +264,14 @@ onBeforeUnmount(() => {
 
       <div class="grid gap-6 xl:grid-cols-[0.92fr_1.08fr] xl:items-start">
         <div class="space-y-4">
-          <p class="inline-flex rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+          <p
+            class="inline-flex rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground"
+          >
             Activity editor
           </p>
-          <h1 class="headline-balance max-w-3xl break-words font-serif text-5xl font-bold tracking-tight text-foreground sm:text-6xl">
+          <h1
+            class="headline-balance max-w-3xl break-words font-serif text-5xl font-bold tracking-tight text-foreground sm:text-6xl"
+          >
             {{ editorHeading }}
           </h1>
           <p class="max-w-2xl text-lg leading-8 text-muted-foreground">
@@ -272,7 +284,11 @@ onBeforeUnmount(() => {
                 Workflow
               </p>
               <p class="mt-2 text-base font-semibold text-foreground">
-                {{ isEditing ? 'Refine details and keep the draft current.' : 'Start with the essentials and save a draft first.' }}
+                {{
+                  isEditing
+                    ? 'Refine details and keep the draft current.'
+                    : 'Start with the essentials and save a draft first.'
+                }}
               </p>
             </div>
 
@@ -299,18 +315,27 @@ onBeforeUnmount(() => {
 
           <div v-else class="space-y-4">
             <div class="flex flex-wrap items-center gap-3">
-              <span class="rounded-full bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">
-                {{ isEditing ? currentActivity?.status ?? 'DRAFT' : 'NEW DRAFT' }}
+              <span
+                class="rounded-full bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground"
+              >
+                {{ isEditing ? (currentActivity?.status ?? 'DRAFT') : 'NEW DRAFT' }}
               </span>
-              <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              <span
+                class="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary"
+              >
                 {{ formatTicketPrice(form.ticketPrice || '0') }}
               </span>
-              <span class="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              <span
+                class="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+              >
                 {{ form.visibility }}
               </span>
             </div>
 
-            <div v-if="previewImageUrl" class="overflow-hidden rounded-[1.5rem] border border-white/70">
+            <div
+              v-if="previewImageUrl"
+              class="overflow-hidden rounded-[1.5rem] border border-white/70"
+            >
               <img
                 :src="previewImageUrl"
                 :alt="form.title || 'Activity preview'"
@@ -323,7 +348,9 @@ onBeforeUnmount(() => {
             >
               <div class="max-w-sm">
                 <ImagePlus class="mx-auto h-6 w-6 text-primary" />
-                <p class="mt-3 text-base font-semibold text-foreground">Preview the activity card image here.</p>
+                <p class="mt-3 text-base font-semibold text-foreground">
+                  Preview the activity card image here.
+                </p>
                 <p class="mt-2 text-sm leading-6">
                   Add an image to check how the activity will read before it appears in the feed.
                 </p>
@@ -331,15 +358,27 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-              <p class="break-words">{{ formatDateRange(form.startAt || null, form.endAt || null) }}</p>
+              <p class="break-words">
+                {{ formatDateRange(form.startAt || null, form.endAt || null) }}
+              </p>
               <p class="break-words">{{ previewLocationLabel }}</p>
               <p>{{ form.capacity ? `${form.capacity} spaces planned` : 'Open capacity' }}</p>
               <RouterLink
                 v-if="isEditing && currentActivity"
                 class="font-semibold text-primary"
-                :to="{ name: 'admin-activity-reservations', params: { activityId: currentActivity.id } }"
+                :to="{
+                  name: 'admin-activity-reservations',
+                  params: { activityId: currentActivity.id },
+                }"
               >
                 View reservations
+              </RouterLink>
+              <RouterLink
+                v-if="isEditing && currentActivity"
+                class="font-semibold text-primary"
+                :to="{ name: 'activity-detail', params: { activityId: currentActivity.id } }"
+              >
+                Preview page
               </RouterLink>
             </div>
           </div>
@@ -439,7 +478,11 @@ onBeforeUnmount(() => {
                 <SelectValue placeholder="Select visibility" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem v-for="option in visibilityOptions" :key="option.value" :value="option.value">
+                <SelectItem
+                  v-for="option in visibilityOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
                   {{ option.label }}
                 </SelectItem>
               </SelectContent>
@@ -450,11 +493,17 @@ onBeforeUnmount(() => {
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="space-y-2">
             <span class="text-sm font-semibold text-foreground">Reservations open</span>
-            <DateTimeField v-model="form.reservationOpensAt" placeholder="Select the opening time" />
+            <DateTimeField
+              v-model="form.reservationOpensAt"
+              placeholder="Select the opening time"
+            />
           </label>
           <label class="space-y-2">
             <span class="text-sm font-semibold text-foreground">Reservations close</span>
-            <DateTimeField v-model="form.reservationClosesAt" placeholder="Select the closing time" />
+            <DateTimeField
+              v-model="form.reservationClosesAt"
+              placeholder="Select the closing time"
+            />
           </label>
         </div>
 
@@ -469,16 +518,13 @@ onBeforeUnmount(() => {
           />
         </label>
 
-        <div class="flex flex-col-reverse gap-3 border-t border-white/70 pt-2 sm:flex-row sm:justify-end">
-          <Button
-            size="lg"
-            type="button"
-            variant="outline"
-            @click="clearLocalChanges"
-          >
+        <div
+          class="flex flex-col-reverse gap-3 border-t border-white/70 pt-2 sm:flex-row sm:justify-end"
+        >
+          <Button size="lg" type="button" variant="outline" @click="clearLocalChanges">
             {{ isEditing ? 'Reset changes' : 'Clear form' }}
           </Button>
-            <Button
+          <Button
             :disabled="saveMutation.isPending.value || isActivityLoading"
             class="sm:min-w-56"
             size="lg"

@@ -38,7 +38,10 @@ describe('AuthView', () => {
 
   it('shows a helpful error on invalid login', async () => {
     server.use(
-      http.post('http://localhost:8080/api/auth/login', () => new HttpResponse(null, { status: 401 })),
+      http.post(
+        'http://localhost:8080/api/auth/login',
+        () => new HttpResponse(null, { status: 401 }),
+      ),
     )
 
     const user = userEvent.setup()
@@ -55,7 +58,7 @@ describe('AuthView', () => {
     expect(await screen.findByText('Email or password is incorrect.')).toBeTruthy()
   })
 
-  it('redirects to activities after a successful login', async () => {
+  it('redirects to the requested detail page after a successful login', async () => {
     server.use(
       http.post('http://localhost:8080/api/auth/login', () =>
         HttpResponse.json({ token: 'jwt-token' }),
@@ -65,7 +68,7 @@ describe('AuthView', () => {
 
     const user = userEvent.setup()
     const { router } = await renderRoute({
-      route: '/auth',
+      route: '/auth?redirect=/activities/7',
       authComponent: AuthView,
     })
 
@@ -74,7 +77,7 @@ describe('AuthView', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
 
     await waitFor(() => {
-      expect(router.currentRoute.value.name).toBe('activities')
+      expect(router.currentRoute.value.fullPath).toBe('/activities/7')
     })
   })
 
@@ -111,6 +114,31 @@ describe('AuthView', () => {
         email: 'admin@example.com',
         isAdmin: true,
       })
+    })
+  })
+
+  it('redirects to the requested detail page after registration', async () => {
+    server.use(
+      http.post('http://localhost:8080/api/auth/register', () =>
+        HttpResponse.json({ token: 'jwt-token' }),
+      ),
+      http.get('http://localhost:8080/api/users/me', () => HttpResponse.json(sampleUser)),
+    )
+
+    const user = userEvent.setup()
+    const { router } = await renderRoute({
+      route: '/auth?mode=register&redirect=/activities/9',
+      authComponent: AuthView,
+    })
+
+    await user.type(getInput('register-username'), 'alice')
+    await user.type(getInput('register-email'), 'alice@example.com')
+    await user.type(getInput('register-password'), 'password123')
+    await user.type(getInput('register-confirm-password'), 'password123')
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+
+    await waitFor(() => {
+      expect(router.currentRoute.value.fullPath).toBe('/activities/9')
     })
   })
 })

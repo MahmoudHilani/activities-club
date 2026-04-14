@@ -41,3 +41,4 @@ frontend/*.tsbuildinfo
 
 # Docker
 *.pid
+.dev/

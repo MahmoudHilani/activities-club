@@ -34,6 +34,14 @@ public class ActivityController {
         return activityService.listPublic(pageable, currentUser);
     }
 
+    @GetMapping("/{activityId}")
+    public ActivityResponse activity(
+        @PathVariable Long activityId,
+        @AuthenticationPrincipal AuthenticatedUser currentUser
+    ) {
+        return activityService.getPublicActivity(activityId, currentUser);
+    }
+
     @PostMapping("/{activityId}/reservations")
     public ReservationResponse reserve(
         @PathVariable Long activityId,

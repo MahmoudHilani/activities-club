@@ -47,6 +47,12 @@ export async function getPublicActivities({
   return data
 }
 
+export async function getPublicActivity(activityId: number): Promise<ActivityResponse> {
+  const { data } = await apiClient.get<ActivityResponse>(`/api/activities/${activityId}`)
+
+  return data
+}
+
 export async function getAdminActivities({
   page = 0,
   size = 100,

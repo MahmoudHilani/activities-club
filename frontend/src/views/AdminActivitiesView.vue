@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { CalendarRange, ClipboardList, LoaderCircle, PencilLine, Rocket, Trash2 } from 'lucide-vue-next'
+import {
+  CalendarRange,
+  ClipboardList,
+  LoaderCircle,
+  PencilLine,
+  Rocket,
+  Trash2,
+} from 'lucide-vue-next'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
@@ -53,7 +60,11 @@ const deleteMutation = useMutation(() => ({
 }))
 
 function canDelete(activity: ActivityResponse): boolean {
-  return activity.status === 'DRAFT' && activity.confirmedReservationCount === 0 && activity.waitlistCount === 0
+  return (
+    activity.status === 'DRAFT' &&
+    activity.confirmedReservationCount === 0 &&
+    activity.waitlistCount === 0
+  )
 }
 
 async function invalidateActivityQueries(): Promise<void> {
@@ -68,20 +79,27 @@ async function invalidateActivityQueries(): Promise<void> {
   <section class="flex flex-1 flex-col gap-8">
     <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr] xl:items-end">
       <div class="space-y-5">
-        <p class="inline-flex rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+        <p
+          class="inline-flex rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground"
+        >
           Activity management
         </p>
-        <h1 class="headline-balance max-w-3xl font-serif text-5xl font-bold tracking-tight text-foreground sm:text-6xl">
+        <h1
+          class="headline-balance max-w-3xl font-serif text-5xl font-bold tracking-tight text-foreground sm:text-6xl"
+        >
           Keep drafts, publishing, and reservation access under control.
         </h1>
         <p class="max-w-2xl text-lg leading-8 text-muted-foreground">
-          Review every activity in one place, then jump into the dedicated editor when details need work.
+          Review every activity in one place, then jump into the dedicated editor when details need
+          work.
         </p>
       </div>
 
       <div class="surface-panel rounded-[1.75rem] border border-white/70 p-6">
         <div class="flex items-start gap-4">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+          <div
+            class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground"
+          >
             <ClipboardList class="h-5 w-5" />
           </div>
           <div class="min-w-0 flex-1">
@@ -158,10 +176,14 @@ async function invalidateActivityQueries(): Promise<void> {
                 <h2 class="break-words text-xl font-bold text-foreground sm:text-2xl">
                   {{ activity.title }}
                 </h2>
-                <span class="rounded-full bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">
+                <span
+                  class="rounded-full bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground"
+                >
                   {{ activity.status }}
                 </span>
-                <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                <span
+                  class="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary"
+                >
                   {{ formatTicketPrice(activity.ticketPrice) }}
                 </span>
               </div>
@@ -178,7 +200,8 @@ async function invalidateActivityQueries(): Promise<void> {
                 <p class="flex items-start gap-2 break-words">
                   <Rocket class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                   <span>
-                    {{ activity.confirmedReservationCount }} confirmed, {{ activity.waitlistCount }} waitlisted,
+                    {{ activity.confirmedReservationCount }} confirmed,
+                    {{ activity.waitlistCount }} waitlisted,
                     {{ formatAvailability(activity.availableSpots, activity.atCapacity) }}
                   </span>
                 </p>
@@ -193,6 +216,12 @@ async function invalidateActivityQueries(): Promise<void> {
             >
               <PencilLine class="h-4 w-4" />
               Edit details
+            </RouterLink>
+            <RouterLink
+              :class="buttonVariants({ variant: 'outline', size: 'sm' })"
+              :to="{ name: 'activity-detail', params: { activityId: activity.id } }"
+            >
+              Preview page
             </RouterLink>
             <RouterLink
               :class="buttonVariants({ variant: 'outline', size: 'sm' })"

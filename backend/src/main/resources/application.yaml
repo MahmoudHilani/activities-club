@@ -30,4 +30,4 @@ app:
     secret: ${JWT_SECRET}
     expiration-ms: ${JWT_EXPIRATION_MS:900000}
   uploads:
-    dir: ${UPLOADS_DIR:./uploads}
+    dir: ${UPLOADS_DIR:${user.home}/.activities-club/uploads}

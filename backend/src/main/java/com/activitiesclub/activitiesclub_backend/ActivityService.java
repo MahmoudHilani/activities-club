@@ -46,6 +46,17 @@ public class ActivityService {
     }
 
     @Transactional(readOnly = true)
+    public ActivityResponse getPublicActivity(Long activityId, AuthenticatedUser currentUser) {
+        Long currentUserId = currentUser == null ? null : currentUser.id();
+
+        Activity activity = activityRepository
+            .findByIdAndStatusAndVisibility(activityId, ActivityStatus.PUBLISHED, ActivityVisibility.PUBLIC)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Activity not found"));
+
+        return toResponse(activity, currentUserId);
+    }
+
+    @Transactional(readOnly = true)
     public Page<ActivityResponse> listAdmin(Pageable pageable) {
         return activityRepository.findAllByOrderByCreatedAtDesc(pageable).map(activity -> toResponse(activity, null));
     }

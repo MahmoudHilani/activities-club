@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import LoginForm from '@/components/auth/LoginForm.vue'
 import RegisterForm from '@/components/auth/RegisterForm.vue'
+import { resolveRedirectPath } from '@/lib/redirect'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 type AuthMode = 'login' | 'register'
@@ -30,9 +31,14 @@ watch(currentTab, async (value) => {
     return
   }
 
+  const redirectPath = resolveRedirectPath(route.query.redirect, '')
+
   await router.replace({
     name: 'auth',
-    query: value === 'login' ? {} : { mode: value },
+    query: {
+      ...(value === 'login' ? {} : { mode: value }),
+      ...(redirectPath ? { redirect: redirectPath } : {}),
+    },
   })
 })
 </script>
@@ -41,14 +47,19 @@ watch(currentTab, async (value) => {
   <section class="grid flex-1 items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]">
     <div class="space-y-8">
       <div class="max-w-2xl space-y-5">
-        <p class="inline-flex rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+        <p
+          class="inline-flex rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground"
+        >
           Join the club
         </p>
-        <h1 class="headline-balance max-w-xl font-serif text-5xl font-bold tracking-tight text-foreground sm:text-6xl">
+        <h1
+          class="headline-balance max-w-xl font-serif text-5xl font-bold tracking-tight text-foreground sm:text-6xl"
+        >
           Find the next thing worth showing up for.
         </h1>
         <p class="max-w-2xl text-lg leading-8 text-muted-foreground">
-          Sign in to keep your campus identity in one place, then move straight into the public activity feed.
+          Sign in to keep your campus identity in one place, then jump back into the activity you
+          were viewing.
         </p>
       </div>
 
@@ -64,7 +75,7 @@ watch(currentTab, async (value) => {
           <Ticket class="h-5 w-5 text-primary" />
           <h2 class="mt-4 text-base font-bold text-foreground">Activity-first</h2>
           <p class="mt-2 text-sm text-muted-foreground">
-            Land back on the public feed the moment auth succeeds.
+            Land back on the page you asked for the moment auth succeeds.
           </p>
         </div>
         <div class="surface-panel rounded-[1.5rem] border border-white/65 p-5">
@@ -77,7 +88,9 @@ watch(currentTab, async (value) => {
       </div>
     </div>
 
-    <div class="surface-panel rounded-[2rem] border border-white/70 p-6 shadow-[0_30px_60px_rgba(31,41,55,0.1)] sm:p-8">
+    <div
+      class="surface-panel rounded-[2rem] border border-white/70 p-6 shadow-[0_30px_60px_rgba(31,41,55,0.1)] sm:p-8"
+    >
       <div class="mb-6">
         <p class="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
           Member access

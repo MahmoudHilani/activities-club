@@ -3,15 +3,17 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { LoaderCircle } from 'lucide-vue-next'
 import { useForm } from 'vee-validate'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { z } from 'zod'
 
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { mapLoginError } from '@/lib/api/errors'
+import { resolveRedirectPath } from '@/lib/redirect'
 import { useSessionStore } from '@/stores/session'
 
+const route = useRoute()
 const router = useRouter()
 const sessionStore = useSessionStore()
 const serverError = ref('')
@@ -43,7 +45,7 @@ const onSubmit = handleSubmit(async (values) => {
 
   try {
     await sessionStore.login(values)
-    await router.push({ name: 'activities' })
+    await router.push(resolveRedirectPath(route.query.redirect))
   } catch (error) {
     serverError.value = mapLoginError(error)
   }

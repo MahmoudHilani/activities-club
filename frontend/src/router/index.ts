@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+import { resolveRedirectPath } from '@/lib/redirect'
 import { pinia } from '@/lib/pinia'
 import { useSessionStore } from '@/stores/session'
 
@@ -16,6 +17,14 @@ const router = createRouter({
       component: () => import('@/views/ActivitiesView.vue'),
       meta: {
         title: 'Public activities',
+      },
+    },
+    {
+      path: '/activities/:activityId',
+      name: 'activity-detail',
+      component: () => import('@/views/ActivityDetailView.vue'),
+      meta: {
+        title: 'Activity details',
       },
     },
     {
@@ -73,7 +82,7 @@ router.beforeEach(async (to) => {
   }
 
   if (to.name === 'auth' && sessionStore.isAuthenticated) {
-    return { name: 'activities' }
+    return resolveRedirectPath(to.query.redirect)
   }
 
   if (to.meta.requiresAdmin) {

@@ -10,6 +10,7 @@ interface RenderRouteOptions {
   route: string
   authComponent?: Component
   activitiesComponent?: Component
+  activityDetailComponent?: Component
   adminComponent?: Component
   adminEditorComponent?: Component
   adminReservationsComponent?: Component
@@ -19,6 +20,7 @@ export async function renderRoute({
   route,
   authComponent = PlaceholderView,
   activitiesComponent = PlaceholderView,
+  activityDetailComponent = PlaceholderView,
   adminComponent = PlaceholderView,
   adminEditorComponent = PlaceholderView,
   adminReservationsComponent = PlaceholderView,
@@ -35,6 +37,11 @@ export async function renderRoute({
         path: '/activities',
         name: 'activities',
         component: activitiesComponent,
+      },
+      {
+        path: '/activities/:activityId',
+        name: 'activity-detail',
+        component: activityDetailComponent,
       },
       {
         path: '/admin/activities',

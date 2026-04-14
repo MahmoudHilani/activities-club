@@ -15,6 +15,9 @@ const currentUserLabel = computed(() =>
 )
 const isAdmin = computed(() => sessionStore.user?.role === 'ADMIN')
 const isAdminRoute = computed(() => route.path.startsWith('/admin/activities'))
+const isActivitiesRoute = computed(
+  () => route.name === 'activities' || route.name === 'activity-detail',
+)
 
 function navClass(isActive: boolean): string {
   return cn(
@@ -26,10 +29,14 @@ function navClass(isActive: boolean): string {
 
 <template>
   <header class="relative z-10 border-b border-white/55 bg-white/45 backdrop-blur-xl">
-    <div class="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <div
+      class="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
+    >
       <div class="flex items-center gap-3">
         <RouterLink class="flex items-center gap-3" :to="{ name: 'activities' }">
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_12px_26px_rgba(38,70,173,0.28)]">
+          <div
+            class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_12px_26px_rgba(38,70,173,0.28)]"
+          >
             <Sparkles class="h-5 w-5" />
           </div>
           <div>
@@ -42,7 +49,7 @@ function navClass(isActive: boolean): string {
       </div>
 
       <div class="hidden items-center gap-2 md:flex">
-        <RouterLink :class="navClass(route.name === 'activities')" :to="{ name: 'activities' }">
+        <RouterLink :class="navClass(isActivitiesRoute)" :to="{ name: 'activities' }">
           Activities
         </RouterLink>
         <RouterLink
@@ -66,7 +73,12 @@ function navClass(isActive: boolean): string {
 
         <template v-else>
           <RouterLink
-            :class="buttonVariants({ variant: route.name === 'auth' ? 'secondary' : 'default', size: 'sm' })"
+            :class="
+              buttonVariants({
+                variant: route.name === 'auth' ? 'secondary' : 'default',
+                size: 'sm',
+              })
+            "
             :to="{ name: 'auth' }"
           >
             Login / Register
