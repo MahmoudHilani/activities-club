@@ -20,6 +20,15 @@ export function formatDateRange(startAt?: string | null, endAt?: string | null):
   return format(value, 'EEE, MMM d, p')
 }
 
+export function formatDateStart(startAt?: string | null, endAt?: string | null): string {
+  if (!startAt && !endAt) {
+    return 'Schedule to be announced'
+  }
+
+  const value = new Date(startAt ?? endAt ?? '')
+  return format(value, 'EEE, MMM d, p')
+}
+
 export function formatReservationWindow(opensAt?: string | null, closesAt?: string | null): string | null {
   if (!opensAt && !closesAt) {
     return null
