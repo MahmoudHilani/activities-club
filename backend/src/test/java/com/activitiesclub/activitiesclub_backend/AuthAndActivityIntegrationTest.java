@@ -347,6 +347,31 @@ class AuthAndActivityIntegrationTest {
     }
 
     @Test
+    void cancelledActivitiesCanBeRepublishedAndDeletedWithoutReservationHistory() throws Exception {
+        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+
+        long activityId = createAdminActivity(adminToken, "Cinema Night", "image/png", "poster.png", "PUBLIC", 5, "8.00");
+
+        mockMvc.perform(patch("/api/admin/activities/{activityId}/cancel", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        publishActivity(adminToken, activityId)
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("PUBLISHED"));
+
+        mockMvc.perform(patch("/api/admin/activities/{activityId}/cancel", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        mockMvc.perform(delete("/api/admin/activities/{activityId}", activityId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isNoContent());
+    }
+
+    @Test
     void corsAllowsFrontendOriginForPublicAndAuthenticatedApiCalls() throws Exception {
         mockMvc.perform(get("/api/activities/public")
                 .header(HttpHeaders.ORIGIN, FRONTEND_ORIGIN))

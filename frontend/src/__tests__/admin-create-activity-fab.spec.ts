@@ -25,6 +25,11 @@ describe('AdminCreateActivityFab', () => {
           name: 'admin-activity-create',
           component: { template: '<div />' },
         },
+        {
+          path: '/activities/:activityId',
+          name: 'activity-detail',
+          component: { template: '<div />' },
+        },
       ],
     })
 
@@ -47,5 +52,50 @@ describe('AdminCreateActivityFab', () => {
 
     const createLink = screen.getByRole('link', { name: 'Create activity' })
     expect(createLink.getAttribute('href')).toBe('/admin/activities/new')
+  })
+
+  it('hides the floating create shortcut on an activity detail page', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        {
+          path: '/activities',
+          name: 'activities',
+          component: { template: '<div />' },
+        },
+        {
+          path: '/admin/activities/new',
+          name: 'admin-activity-create',
+          component: { template: '<div />' },
+        },
+        {
+          path: '/activities/:activityId',
+          name: 'activity-detail',
+          component: { template: '<div />' },
+        },
+      ],
+    })
+
+    const sessionStore = useSessionStore(pinia)
+    sessionStore.isHydrated = true
+    sessionStore.token = 'token'
+    sessionStore.user = {
+      ...sampleUser,
+      role: 'ADMIN',
+    }
+
+    await router.push('/activities/1')
+    await router.isReady()
+
+    render(AdminCreateActivityFab, {
+      global: {
+        plugins: [pinia, router],
+      },
+    })
+
+    expect(screen.queryByRole('link', { name: 'Create activity' })).toBeNull()
   })
 })

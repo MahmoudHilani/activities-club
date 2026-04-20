@@ -12,11 +12,13 @@ const sessionStore = useSessionStore()
 
 const isAdmin = computed(() => sessionStore.user?.role === 'ADMIN')
 const isCreateRoute = computed(() => route.name === 'admin-activity-create')
+const isActivityDetailRoute = computed(() => route.name === 'activity-detail')
+const shouldShowFab = computed(() => isAdmin.value && !isActivityDetailRoute.value)
 </script>
 
 <template>
   <RouterLink
-    v-if="isAdmin"
+    v-if="shouldShowFab"
     aria-label="Create activity"
     :aria-current="isCreateRoute ? 'page' : undefined"
     :class="

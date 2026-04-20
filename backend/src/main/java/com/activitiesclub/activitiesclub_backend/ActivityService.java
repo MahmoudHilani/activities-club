@@ -112,8 +112,11 @@ public class ActivityService {
     public ActivityResponse publish(Long activityId) {
         Activity activity = getActivity(activityId);
 
-        if (activity.getStatus() != ActivityStatus.DRAFT) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only draft activities can be published");
+        if (activity.getStatus() != ActivityStatus.DRAFT && activity.getStatus() != ActivityStatus.CANCELLED) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Only draft or cancelled activities can be published"
+            );
         }
 
         activity.setStatus(ActivityStatus.PUBLISHED);
@@ -139,10 +142,10 @@ public class ActivityService {
     public void delete(Long activityId) {
         Activity activity = getActivity(activityId);
 
-        if (activity.getStatus() != ActivityStatus.DRAFT) {
+        if (activity.getStatus() != ActivityStatus.DRAFT && activity.getStatus() != ActivityStatus.CANCELLED) {
             throw new ResponseStatusException(
                 HttpStatus.CONFLICT,
-                "Only draft activities without reservation history can be deleted"
+                "Only draft or cancelled activities without reservation history can be deleted"
             );
         }
         if (reservationRepository.existsByActivityId(activityId)) {

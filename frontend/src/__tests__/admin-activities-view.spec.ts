@@ -10,6 +10,32 @@ import { renderRoute } from '@/test/render'
 import { server } from '@/test/server'
 
 describe('AdminActivitiesView', () => {
+  it('truncates long activity descriptions in the management cards', async () => {
+    const longDescription = 'A'.repeat(320)
+
+    server.use(
+      http.get('http://localhost:8080/api/admin/activities', () =>
+        HttpResponse.json(
+          buildPage([
+            buildActivity({
+              description: longDescription,
+            }),
+          ]),
+        ),
+      ),
+    )
+
+    await renderRoute({
+      route: '/admin/activities',
+      adminComponent: AdminActivitiesView,
+    })
+
+    const truncatedDescription = `${'A'.repeat(280)}...`
+
+    expect(await screen.findByText(truncatedDescription)).toBeTruthy()
+    expect(screen.queryByText(longDescription)).toBeNull()
+  })
+
   it('navigates from activity management to the edit page', async () => {
     server.use(
       http.get('http://localhost:8080/api/admin/activities', () =>
@@ -36,5 +62,44 @@ describe('AdminActivitiesView', () => {
     })
 
     expect(await screen.findByRole('heading', { name: 'Chess Night' })).toBeTruthy()
+  })
+
+  it('shows publish and delete again after cancelling a draft activity', async () => {
+    let activity = buildActivity({
+      status: 'DRAFT',
+      confirmedReservationCount: 0,
+      waitlistCount: 0,
+      availableSpots: 20,
+    })
+
+    server.use(
+      http.get('http://localhost:8080/api/admin/activities', () =>
+        HttpResponse.json(buildPage([activity])),
+      ),
+      http.patch('http://localhost:8080/api/admin/activities/1/cancel', () => {
+        activity = {
+          ...activity,
+          status: 'CANCELLED',
+        }
+
+        return HttpResponse.json(activity)
+      }),
+    )
+
+    const user = userEvent.setup()
+    await renderRoute({
+      route: '/admin/activities',
+      adminComponent: AdminActivitiesView,
+    })
+
+    expect(await screen.findByText('Chess Night')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Publish$/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Delete$/i })).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: /^Cancel$/i }))
+
+    expect(await screen.findByText('CANCELLED')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Publish$/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Delete$/i })).toBeTruthy()
   })
 })

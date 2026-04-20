@@ -6,7 +6,7 @@ import AppHeader from '@/components/AppHeader.vue'
 </script>
 
 <template>
-  <div class="relative min-h-screen overflow-x-hidden">
+  <div class="relative flex min-h-screen flex-col overflow-x-hidden">
     <div
       class="pointer-events-none absolute inset-x-0 top-[-22rem] h-[52rem] bg-[radial-gradient(circle_at_top,rgba(26,86,219,0.2),rgba(26,86,219,0.08)_34%,transparent_72%)]"
     />
@@ -18,7 +18,7 @@ import AppHeader from '@/components/AppHeader.vue'
     <AdminCreateActivityFab />
 
     <main
-      class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-7xl flex-col px-4 pb-16 pt-8 sm:px-6 lg:px-8 lg:pt-10"
+      class="relative mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 pb-16 pt-8 sm:px-6 lg:px-8 lg:pt-10"
     >
       <RouterView />
     </main>

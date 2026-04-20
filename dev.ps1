@@ -220,7 +220,7 @@ Start-DevWindow `
     -EnvVars @{
         "VITE_API_BASE_URL" = "http://localhost:$backendPort"
     } `
-    -Command "npm run dev -- --host 0.0.0.0 --port $frontendPort" `
+    -Command "npm run dev" `
     -PidFile (Join-Path $devDir "frontend.pid")
 
 Write-Host ""

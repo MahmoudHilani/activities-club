@@ -2,7 +2,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
   CalendarRange,
-  ClipboardList,
   LoaderCircle,
   PencilLine,
   Rocket,
@@ -22,6 +21,8 @@ import {
 import { mapActivitiesError } from '@/lib/api/errors'
 import type { ActivityResponse } from '@/lib/api/types'
 import { formatAvailability, formatDateRange, formatTicketPrice } from '@/lib/formatters'
+
+const ACTIVITY_DESCRIPTION_PREVIEW_LIMIT = 280
 
 const queryClient = useQueryClient()
 
@@ -59,12 +60,28 @@ const deleteMutation = useMutation(() => ({
   onSuccess: invalidateActivityQueries,
 }))
 
+function canPublish(activity: ActivityResponse): boolean {
+  return activity.status === 'DRAFT' || activity.status === 'CANCELLED'
+}
+
 function canDelete(activity: ActivityResponse): boolean {
   return (
-    activity.status === 'DRAFT' &&
+    (activity.status === 'DRAFT' || activity.status === 'CANCELLED') &&
     activity.confirmedReservationCount === 0 &&
     activity.waitlistCount === 0
   )
+}
+
+function formatDescriptionPreview(description?: string | null): string {
+  if (!description) {
+    return 'No description added yet.'
+  }
+
+  if (description.length <= ACTIVITY_DESCRIPTION_PREVIEW_LIMIT) {
+    return description
+  }
+
+  return `${description.slice(0, ACTIVITY_DESCRIPTION_PREVIEW_LIMIT).trimEnd()}...`
 }
 
 async function invalidateActivityQueries(): Promise<void> {
@@ -77,52 +94,6 @@ async function invalidateActivityQueries(): Promise<void> {
 
 <template>
   <section class="flex flex-1 flex-col gap-8">
-    <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr] xl:items-end">
-      <div class="space-y-5">
-        <p
-          class="inline-flex rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground"
-        >
-          Activity management
-        </p>
-        <h1
-          class="headline-balance max-w-3xl font-serif text-5xl font-bold tracking-tight text-foreground sm:text-6xl"
-        >
-          Keep drafts, publishing, and reservation access under control.
-        </h1>
-        <p class="max-w-2xl text-lg leading-8 text-muted-foreground">
-          Review every activity in one place, then jump into the dedicated editor when details need
-          work.
-        </p>
-      </div>
-
-      <div class="surface-panel rounded-[1.75rem] border border-white/70 p-6">
-        <div class="flex items-start gap-4">
-          <div
-            class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground"
-          >
-            <ClipboardList class="h-5 w-5" />
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Admin workspace
-            </p>
-            <p class="mt-2 text-2xl font-bold tracking-tight text-foreground">
-              Separate creation and management flows
-            </p>
-            <p class="mt-2 text-sm leading-7 text-muted-foreground">
-              Use the floating plus button from anywhere, or open the full editor here.
-            </p>
-            <RouterLink
-              :class="buttonVariants({ size: 'sm' })"
-              :to="{ name: 'admin-activity-create' }"
-            >
-              Open activity editor
-            </RouterLink>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <Alert v-if="activitiesQuery.isError.value" variant="destructive">
       {{ mapActivitiesError(activitiesQuery.error.value) }}
     </Alert>
@@ -189,7 +160,7 @@ async function invalidateActivityQueries(): Promise<void> {
               </div>
 
               <p class="mt-3 break-words text-sm leading-6 text-muted-foreground">
-                {{ activity.description || 'No description added yet.' }}
+                {{ formatDescriptionPreview(activity.description) }}
               </p>
 
               <div class="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
@@ -209,29 +180,30 @@ async function invalidateActivityQueries(): Promise<void> {
             </div>
           </div>
 
-          <div class="flex w-full flex-wrap gap-2 xl:max-w-[21rem] xl:justify-end">
+          <div class="flex w-full flex-col gap-2 xl:min-w-[15rem] xl:max-w-[15rem] xl:items-stretch">
             <RouterLink
-              :class="buttonVariants({ size: 'sm' })"
+              :class="[buttonVariants({ size: 'sm' }), 'w-full justify-center']"
               :to="{ name: 'admin-activity-edit', params: { activityId: activity.id } }"
             >
               <PencilLine class="h-4 w-4" />
               Edit details
             </RouterLink>
             <RouterLink
-              :class="buttonVariants({ variant: 'outline', size: 'sm' })"
+              :class="[buttonVariants({ variant: 'outline', size: 'sm' }), 'w-full justify-center']"
               :to="{ name: 'activity-detail', params: { activityId: activity.id } }"
             >
               Preview page
             </RouterLink>
             <RouterLink
-              :class="buttonVariants({ variant: 'outline', size: 'sm' })"
+              :class="[buttonVariants({ variant: 'outline', size: 'sm' }), 'w-full justify-center']"
               :to="{ name: 'admin-activity-reservations', params: { activityId: activity.id } }"
             >
               View reservations
             </RouterLink>
             <Button
-              v-if="activity.status === 'DRAFT'"
+              v-if="canPublish(activity)"
               :disabled="publishMutation.isPending.value"
+              class="w-full justify-center"
               size="sm"
               variant="outline"
               @click="publishMutation.mutate(activity.id)"
@@ -242,6 +214,7 @@ async function invalidateActivityQueries(): Promise<void> {
             <Button
               v-if="activity.status !== 'CANCELLED' && activity.status !== 'COMPLETED'"
               :disabled="cancelMutation.isPending.value"
+              class="w-full justify-center"
               size="sm"
               variant="outline"
               @click="cancelMutation.mutate(activity.id)"
@@ -252,6 +225,7 @@ async function invalidateActivityQueries(): Promise<void> {
             <Button
               v-if="canDelete(activity)"
               :disabled="deleteMutation.isPending.value"
+              class="w-full justify-center"
               size="sm"
               variant="destructive"
               @click="deleteMutation.mutate(activity.id)"
