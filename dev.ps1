@@ -1,8 +1,8 @@
-$ErrorActionPreference = "Stop"
-
 param(
     [switch]$WithPgAdmin
 )
+
+$ErrorActionPreference = "Stop"
 
 Set-Location $PSScriptRoot
 
@@ -70,6 +70,43 @@ function Get-RunningProcessFromPidFile {
     }
 }
 
+function Assert-PortAvailableForDockerDb {
+    param([int]$Port)
+
+    $listeners = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty OwningProcess -Unique
+
+    if (-not $listeners) {
+        return
+    }
+
+    $blockingProcesses = @()
+
+    foreach ($processId in $listeners) {
+        try {
+            $process = Get-Process -Id $processId -ErrorAction Stop
+        } catch {
+            continue
+        }
+
+        if ($process.ProcessName -in @("com.docker.backend", "docker-proxy")) {
+            continue
+        }
+
+        $blockingProcesses += $process
+    }
+
+    if (-not $blockingProcesses) {
+        return
+    }
+
+    $details = $blockingProcesses |
+        Sort-Object Id -Unique |
+        ForEach-Object { "$($_.ProcessName) (PID $($_.Id))" }
+
+    throw "Configured DB_PORT $Port is already being used by $($details -join ', '). Stop that process or change DB_PORT in .env to an unused port such as 55432, then retry."
+}
+
 function Start-DevWindow {
     param(
         [string]$Name,
@@ -119,7 +156,13 @@ $jwtExpirationMs = Get-ConfigValue -Values $envValues -Key "JWT_EXPIRATION_MS" -
 $uploadsDir = Get-ConfigValue `
     -Values $envValues `
     -Key "UPLOADS_DIR" `
-    -Default (Join-Path $HOME ".activities-club/uploads")
+    -Default (Join-Path $PSScriptRoot "public/uploads")
+
+if (-not [System.IO.Path]::IsPathRooted($uploadsDir)) {
+    $uploadsDir = Join-Path $PSScriptRoot $uploadsDir
+}
+
+$uploadsDir = [System.IO.Path]::GetFullPath($uploadsDir)
 
 if ([string]::IsNullOrWhiteSpace($jwtSecret) -or $jwtSecret -eq "replace-with-a-local-secret") {
     $jwtSecret = "local-dev-jwt-secret-please-change-123456"
@@ -128,6 +171,8 @@ if ([string]::IsNullOrWhiteSpace($jwtSecret) -or $jwtSecret -eq "replace-with-a-
 
 New-Item -ItemType Directory -Force -Path $devDir | Out-Null
 New-Item -ItemType Directory -Force -Path $uploadsDir | Out-Null
+
+Assert-PortAvailableForDockerDb -Port ([int]$dbPort)
 
 Write-Host "Starting Postgres in Docker..." -ForegroundColor Cyan
 docker compose up -d db | Out-Host

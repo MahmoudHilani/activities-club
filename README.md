@@ -37,7 +37,7 @@ That command:
 - starts Postgres in Docker
 - runs the backend locally with `spring-boot:run`
 - runs the frontend locally with Vite
-- stores uploaded activity images in a stable host folder at `~/.activities-club/uploads` by default
+- stores uploaded activity images in `public/uploads` at the repository root by default
 
 This is the intended fast feedback loop for development because frontend changes hot-reload immediately and backend changes do not require rebuilding a Docker image first.
 
@@ -77,4 +77,4 @@ export JWT_SECRET=replace-with-a-local-secret-at-least-32-bytes
 
 It will connect to Postgres on `localhost:5433` unless you override the `DB_*`, `SERVER_PORT`, or `JWT_*` environment variables.
 
-Uploaded activity images are stored in `~/.activities-club/uploads` by default. Override `UPLOADS_DIR` if you want a different host folder.
+Uploaded activity images are stored in `public/uploads` by default. Override `UPLOADS_DIR` if you want a different folder.

@@ -53,12 +53,12 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <form class="space-y-4" novalidate @submit.prevent="onSubmit">
+  <form class="space-y-5" novalidate @submit.prevent="onSubmit">
     <Alert v-if="serverError" variant="destructive">
       {{ serverError }}
     </Alert>
 
-    <div class="space-y-2">
+    <div class="space-y-2.5">
       <label class="text-sm font-semibold text-foreground" for="login-email">Email</label>
       <Input
         id="login-email"
@@ -71,7 +71,7 @@ const onSubmit = handleSubmit(async (values) => {
       <p v-if="errors.email" class="text-sm text-destructive">{{ errors.email }}</p>
     </div>
 
-    <div class="space-y-2">
+    <div class="space-y-2.5">
       <label class="text-sm font-semibold text-foreground" for="login-password">Password</label>
       <Input
         id="login-password"
@@ -81,10 +81,11 @@ const onSubmit = handleSubmit(async (values) => {
         placeholder="Enter your password"
         type="password"
       />
+      <p class="text-xs text-muted-foreground">Use the password attached to your account.</p>
       <p v-if="errors.password" class="text-sm text-destructive">{{ errors.password }}</p>
     </div>
 
-    <Button class="w-full" :disabled="isSubmitting" size="lg" type="submit">
+    <Button class="mt-1 w-full" :disabled="isSubmitting" size="lg" type="submit">
       <LoaderCircle v-if="isSubmitting" class="h-4 w-4 animate-spin" />
       Sign in
     </Button>

@@ -101,6 +101,7 @@ async function setPage(page: number): Promise<void> {
       </div>
 
       <div
+        v-if="totalPages > 1"
         class="flex flex-col gap-4 rounded-[1.5rem] border border-white/70 bg-white/70 px-5 py-4 shadow-[0_16px_35px_rgba(15,23,42,0.05)] sm:flex-row sm:items-center sm:justify-between"
       >
         <div class="flex items-center gap-3 text-sm text-muted-foreground">

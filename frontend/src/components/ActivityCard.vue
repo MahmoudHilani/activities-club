@@ -6,14 +6,23 @@ import { RouterLink } from 'vue-router'
 import type { ActivityResponse } from '@/lib/api/types'
 import { formatDateStart, formatLocation } from '@/lib/formatters'
 
+const LOCATION_LABEL_LIMIT = 42
+
 const props = defineProps<{
   activity: ActivityResponse
 }>()
 
 const scheduleLabel = computed(() => formatDateStart(props.activity.startAt, props.activity.endAt))
-const locationLabel = computed(() =>
+const fullLocationLabel = computed(() =>
   formatLocation(props.activity.locationName, props.activity.locationAddress),
 )
+const locationLabel = computed(() => {
+  if (fullLocationLabel.value.length <= LOCATION_LABEL_LIMIT) {
+    return fullLocationLabel.value
+  }
+
+  return `${fullLocationLabel.value.slice(0, LOCATION_LABEL_LIMIT).trimEnd()}...`
+})
 </script>
 
 <template>
@@ -43,9 +52,9 @@ const locationLabel = computed(() =>
             <CalendarDays class="h-3.5 w-3.5 text-primary" />
             {{ scheduleLabel }}
           </span>
-          <span class="inline-flex items-center gap-2">
-            <MapPin class="h-3.5 w-3.5 text-primary" />
-            {{ locationLabel }}
+          <span class="inline-flex min-w-0 max-w-full items-center gap-2">
+            <MapPin class="h-3.5 w-3.5 shrink-0 text-primary" />
+            <span class="truncate" :title="fullLocationLabel">{{ locationLabel }}</span>
           </span>
         </div>
 

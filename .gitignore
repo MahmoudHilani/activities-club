@@ -42,3 +42,7 @@ frontend/*.tsbuildinfo
 # Docker
 *.pid
 .dev/
+
+# Repo-local uploads
+public/uploads/*
+!public/uploads/.gitkeep

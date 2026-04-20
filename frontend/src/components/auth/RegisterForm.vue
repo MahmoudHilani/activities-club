@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { LoaderCircle } from 'lucide-vue-next'
+import { Check, LoaderCircle } from 'lucide-vue-next'
 import { useForm } from 'vee-validate'
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -76,12 +76,12 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <form class="space-y-4" novalidate @submit.prevent="onSubmit">
+  <form class="space-y-5" novalidate @submit.prevent="onSubmit">
     <Alert v-if="serverError" variant="destructive">
       {{ serverError }}
     </Alert>
 
-    <div class="space-y-2">
+    <div class="space-y-2.5">
       <label class="text-sm font-semibold text-foreground" for="register-username">Username</label>
       <Input
         id="register-username"
@@ -93,7 +93,7 @@ const onSubmit = handleSubmit(async (values) => {
       <p v-if="errors.username" class="text-sm text-destructive">{{ errors.username }}</p>
     </div>
 
-    <div class="space-y-2">
+    <div class="space-y-2.5">
       <label class="text-sm font-semibold text-foreground" for="register-email">Email</label>
       <Input
         id="register-email"
@@ -106,7 +106,7 @@ const onSubmit = handleSubmit(async (values) => {
       <p v-if="errors.email" class="text-sm text-destructive">{{ errors.email }}</p>
     </div>
 
-    <div class="space-y-2">
+    <div class="space-y-2.5">
       <label class="text-sm font-semibold text-foreground" for="register-password">Password</label>
       <Input
         id="register-password"
@@ -116,10 +116,11 @@ const onSubmit = handleSubmit(async (values) => {
         placeholder="Use at least 8 characters"
         type="password"
       />
+      <p class="text-xs text-muted-foreground">Use 8 to 72 characters.</p>
       <p v-if="errors.password" class="text-sm text-destructive">{{ errors.password }}</p>
     </div>
 
-    <div class="space-y-2">
+    <div class="space-y-2.5">
       <label class="text-sm font-semibold text-foreground" for="register-confirm-password">
         Confirm password
       </label>
@@ -136,21 +137,28 @@ const onSubmit = handleSubmit(async (values) => {
       </p>
     </div>
 
-    <label
-      class="flex items-center gap-3 rounded-2xl border border-border bg-white/60 px-4 py-3 text-sm text-foreground"
-      for="register-is-admin"
-    >
+    <label class="auth-checkbox" for="register-is-admin">
       <input
         id="register-is-admin"
         v-model="isAdmin"
         v-bind="isAdminAttrs"
-        class="h-4 w-4 rounded border-border"
+        class="peer sr-only"
         type="checkbox"
       />
-      <span>Register this account as an admin</span>
+      <span
+        class="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border bg-white text-primary-foreground transition-all peer-checked:border-primary peer-checked:bg-primary peer-focus-visible:ring-4 peer-focus-visible:ring-ring"
+      >
+        <Check class="h-3.5 w-3.5 opacity-0 transition peer-checked:opacity-100" />
+      </span>
+      <span class="min-w-0">
+        <span class="block text-sm font-semibold text-foreground">Register as admin</span>
+        <span class="block text-xs text-muted-foreground">
+          Enable management access for this account.
+        </span>
+      </span>
     </label>
 
-    <Button class="w-full" :disabled="isSubmitting" size="lg" type="submit">
+    <Button class="mt-1 w-full" :disabled="isSubmitting" size="lg" type="submit">
       <LoaderCircle v-if="isSubmitting" class="h-4 w-4 animate-spin" />
       Create account
     </Button>

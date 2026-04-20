@@ -30,8 +30,11 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-app_password}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-900000}
+      UPLOADS_DIR: /app/public/uploads
     ports:
       - "${BACKEND_PORT:-8080}:8080"
+    volumes:
+      - ./public/uploads:/app/public/uploads
 
   frontend:
     build:

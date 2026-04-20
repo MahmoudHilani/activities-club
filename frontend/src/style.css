@@ -102,4 +102,56 @@
   .headline-balance {
     text-wrap: balance;
   }
+
+  .auth-shell {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(250, 246, 240, 0.84)),
+      rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 2rem;
+    padding: 1.75rem;
+    box-shadow:
+      0 28px 60px rgba(34, 45, 66, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(12px);
+  }
+
+  .auth-note {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    padding: 0.55rem 0.9rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--muted-foreground);
+  }
+
+  .auth-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    border: 1px solid color-mix(in srgb, var(--border) 84%, white);
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, 0.74);
+    padding: 0.95rem 1rem;
+    transition:
+      border-color 180ms ease,
+      background-color 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .auth-checkbox:has(input:checked) {
+    border-color: color-mix(in srgb, var(--primary) 42%, white);
+    background: color-mix(in srgb, white 88%, rgba(26, 86, 219, 0.08));
+    box-shadow: 0 8px 20px rgba(38, 70, 173, 0.08);
+  }
+}
+
+@media (min-width: 640px) {
+  .auth-shell {
+    padding: 2rem;
+  }
 }

@@ -19,6 +19,32 @@ function getInput(id: string): HTMLInputElement {
 }
 
 describe('AuthView', () => {
+  it('renders the minimal auth shell with login selected by default', async () => {
+    await renderRoute({
+      route: '/auth',
+      authComponent: AuthView,
+    })
+
+    expect(
+      screen.getByRole('heading', { name: 'Login or create an account' }),
+    ).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Login' }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByRole('tab', { name: 'Register' }).getAttribute('aria-selected')).toBe(
+      'false',
+    )
+  })
+
+  it('selects the register tab from the mode query parameter', async () => {
+    await renderRoute({
+      route: '/auth?mode=register',
+      authComponent: AuthView,
+    })
+
+    expect(screen.getByRole('tab', { name: 'Register' }).getAttribute('aria-selected')).toBe(
+      'true',
+    )
+  })
+
   it('validates the register form when passwords do not match', async () => {
     const user = userEvent.setup()
 
@@ -71,6 +97,10 @@ describe('AuthView', () => {
       route: '/auth?redirect=/activities/7',
       authComponent: AuthView,
     })
+
+    expect(
+      screen.getByText("You'll return to your selected page after signing in."),
+    ).toBeTruthy()
 
     await user.type(getInput('login-email'), 'alice@example.com')
     await user.type(getInput('login-password'), 'password123')

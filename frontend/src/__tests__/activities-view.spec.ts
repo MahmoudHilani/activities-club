@@ -46,6 +46,60 @@ describe('ActivitiesView', () => {
     expect(screen.getByRole('link', { name: /Chess Night/i }).getAttribute('href')).toBe('/activities/1')
   })
 
+  it('truncates long location labels on activity cards', async () => {
+    const locationName = 'Student Union Building'
+    const locationAddress = 'Room AAD;OGFHWGUQWHGN EHRG90WH 1234567890'
+    const fullLocation = `${locationName} | ${locationAddress}`
+    const truncatedLocation = `${fullLocation.slice(0, 42).trimEnd()}...`
+
+    server.use(
+      http.get('http://localhost:8080/api/activities/public', () =>
+        HttpResponse.json(
+          buildPage([
+            buildActivity({
+              locationName,
+              locationAddress,
+            }),
+          ]),
+        ),
+      ),
+    )
+
+    await renderRoute({
+      route: '/activities',
+      activitiesComponent: ActivitiesView,
+    })
+
+    const locationLabel = await screen.findByTitle(fullLocation)
+
+    expect(locationLabel.textContent).toBe(truncatedLocation)
+    expect(screen.queryByText(fullLocation)).toBeNull()
+  })
+
+  it('hides pagination controls when all activities fit on one page', async () => {
+    server.use(
+      http.get('http://localhost:8080/api/activities/public', () =>
+        HttpResponse.json(
+          buildPage([
+            buildActivity({ id: 1, title: 'Chess Night' }),
+            buildActivity({ id: 2, title: 'Open Mic' }),
+          ]),
+        ),
+      ),
+    )
+
+    await renderRoute({
+      route: '/activities',
+      activitiesComponent: ActivitiesView,
+    })
+
+    expect(await screen.findByText('Chess Night')).toBeTruthy()
+    expect(screen.getByText('Open Mic')).toBeTruthy()
+    expect(screen.queryByText(/Page 1 of 1/i)).toBeNull()
+    expect(screen.queryByRole('button', { name: /Previous/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Next/i })).toBeNull()
+  })
+
   it('navigates to the activity detail page when a card is clicked', async () => {
     server.use(
       http.get('http://localhost:8080/api/activities/public', () =>
