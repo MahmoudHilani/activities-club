@@ -30,6 +30,10 @@ export function mapLoginError(error: unknown): string {
     return 'Email or password is incorrect.'
   }
 
+  if (status === 403) {
+    return getApiMessage(error) ?? 'Your account is not approved for sign-in yet.'
+  }
+
   return getApiMessage(error) ?? 'Unable to sign in right now. Please try again.'
 }
 

@@ -13,6 +13,7 @@ export const sampleUser: UserResponse = {
   studentNumber: 'S1234567',
   phoneNumber: '+3531234567',
   userType: 'STUDENT',
+  approvalStatus: 'APPROVED',
   isAdmin: false,
   createdAt: '2026-03-15T10:00:00Z',
   updatedAt: '2026-03-15T10:00:00Z',

@@ -2,6 +2,7 @@ package com.activitiesclub.activitiesclub_backend;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.samePropertyValuesAs;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -67,6 +68,7 @@ class AuthAndActivityIntegrationTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.userType").value("STAFF"))
+            .andExpect(jsonPath("$.approvalStatus").value("APPROVED"))
             .andExpect(jsonPath("$.isAdmin").value(true))
             .andExpect(jsonPath("$.studentNumber").value(org.hamcrest.Matchers.nullValue()))
             .andExpect(jsonPath("$.phoneNumber").value(org.hamcrest.Matchers.nullValue()));
@@ -75,6 +77,7 @@ class AuthAndActivityIntegrationTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + studentToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.userType").value("STUDENT"))
+            .andExpect(jsonPath("$.approvalStatus").value("APPROVED"))
             .andExpect(jsonPath("$.isAdmin").value(false))
             .andExpect(jsonPath("$.studentNumber").value("student-alice"))
             .andExpect(jsonPath("$.phoneNumber").value("phone-alice"));
@@ -83,6 +86,7 @@ class AuthAndActivityIntegrationTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + staffToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.userType").value("STAFF"))
+            .andExpect(jsonPath("$.approvalStatus").value("APPROVED"))
             .andExpect(jsonPath("$.isAdmin").value(false))
             .andExpect(jsonPath("$.studentNumber").value(org.hamcrest.Matchers.nullValue()))
             .andExpect(jsonPath("$.phoneNumber").value(org.hamcrest.Matchers.nullValue()));
@@ -107,6 +111,7 @@ class AuthAndActivityIntegrationTest {
             .andExpect(jsonPath("$", hasSize(2)))
             .andExpect(jsonPath("$[0].username").value("staff-member"))
             .andExpect(jsonPath("$[0].userType").value("STAFF"))
+            .andExpect(jsonPath("$[0].approvalStatus").value("APPROVED"))
             .andExpect(jsonPath("$[0].isAdmin").value(false));
 
         mockMvc.perform(patch("/api/admin/users/{userId}/admin", managedUser.getId())
@@ -120,6 +125,7 @@ class AuthAndActivityIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(managedUser.getId()))
             .andExpect(jsonPath("$.isAdmin").value(true))
+            .andExpect(jsonPath("$.approvalStatus").value("APPROVED"))
             .andExpect(jsonPath("$.userType").value("STAFF"));
     }
 
@@ -149,6 +155,149 @@ class AuthAndActivityIntegrationTest {
                 .content("{}")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void registrationCreatesPendingUsersWithoutSessionAndBlocksLoginUntilApproved() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "username": "alice",
+                      "email": "alice@example.com",
+                      "userType": "STUDENT",
+                      "studentNumber": "S1234567",
+                      "phoneNumber": "+3531234567",
+                      "password": "password123"
+                    }
+                    """))
+            .andExpect(status().isAccepted())
+            .andExpect(jsonPath("$.approvalStatus").value("PENDING"))
+            .andExpect(jsonPath("$.message").value("Registration submitted for admin approval."));
+
+        User pendingUser = userRepository.findByEmailIgnoreCase("alice@example.com")
+            .orElseThrow(() -> new IllegalStateException("Expected pending user to exist"));
+
+        org.assertj.core.api.Assertions.assertThat(pendingUser.getApprovalStatus()).isEqualTo(ApprovalStatus.PENDING);
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "email": "alice@example.com",
+                      "password": "password123"
+                    }
+                    """))
+            .andExpect(status().isForbidden())
+            .andExpect(status().reason("Your registration is awaiting admin approval."));
+    }
+
+    @Test
+    void adminCanApproveOrDenyPendingUsersOnly() throws Exception {
+        String adminToken = createAdminToken();
+        registerStudent("pending-user", "pending@example.com", "password123");
+        User pendingUser = userRepository.findByEmailIgnoreCase("pending@example.com")
+            .orElseThrow(() -> new IllegalStateException("Expected pending user"));
+
+        mockMvc.perform(get("/api/admin/users")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].email").value("pending@example.com"))
+            .andExpect(jsonPath("$[0].approvalStatus").value("PENDING"));
+
+        mockMvc.perform(patch("/api/admin/users/{userId}/approval", pendingUser.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "approvalStatus": "APPROVED"
+                    }
+                    """)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.approvalStatus").value("APPROVED"));
+
+        mockMvc.perform(patch("/api/admin/users/{userId}/approval", pendingUser.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "approvalStatus": "DENIED"
+                    }
+                    """)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void deniedUsersCanReapplyUsingTheSameRecord() throws Exception {
+        String adminToken = createAdminToken();
+
+        registerStudent("alice", "alice@example.com", "password123");
+        User deniedUser = userRepository.findByEmailIgnoreCase("alice@example.com")
+            .orElseThrow(() -> new IllegalStateException("Expected denied candidate"));
+
+        mockMvc.perform(patch("/api/admin/users/{userId}/approval", deniedUser.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "approvalStatus": "DENIED"
+                    }
+                    """)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.approvalStatus").value("DENIED"));
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "email": "alice@example.com",
+                      "password": "password123"
+                    }
+                    """))
+            .andExpect(status().isForbidden())
+            .andExpect(status().reason("Your registration request was denied. Please contact an admin before trying again."));
+
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "username": "alice updated",
+                      "email": "alice@example.com",
+                      "userType": "STAFF",
+                      "password": "newpassword123"
+                    }
+                    """))
+            .andExpect(status().isAccepted())
+            .andExpect(jsonPath("$.approvalStatus").value("PENDING"));
+
+        User reappliedUser = userRepository.findByEmailIgnoreCase("alice@example.com")
+            .orElseThrow(() -> new IllegalStateException("Expected reapplied user"));
+
+        org.assertj.core.api.Assertions.assertThat(reappliedUser.getId()).isEqualTo(deniedUser.getId());
+        org.assertj.core.api.Assertions.assertThat(reappliedUser.getApprovalStatus()).isEqualTo(ApprovalStatus.PENDING);
+        org.assertj.core.api.Assertions.assertThat(reappliedUser.getUsername()).isEqualTo("alice updated");
+        org.assertj.core.api.Assertions.assertThat(reappliedUser.getUserType()).isEqualTo(UserType.STAFF);
+        org.assertj.core.api.Assertions.assertThat(reappliedUser.getStudentNumber()).isNull();
+        org.assertj.core.api.Assertions.assertThat(reappliedUser.getPhoneNumber()).isNull();
+    }
+
+    @Test
+    void adminAccessCannotBeGrantedToPendingUsers() throws Exception {
+        String adminToken = createAdminToken();
+        registerStudent("alice", "alice@example.com", "password123");
+        User pendingUser = userRepository.findByEmailIgnoreCase("alice@example.com")
+            .orElseThrow(() -> new IllegalStateException("Expected pending user"));
+
+        mockMvc.perform(patch("/api/admin/users/{userId}/admin", pendingUser.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "isAdmin": true
+                    }
+                    """)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isConflict())
+            .andExpect(status().reason("Only approved users can receive admin access"));
     }
 
     @Test
@@ -476,6 +625,12 @@ class AuthAndActivityIntegrationTest {
     }
 
     private String registerAndLoginStudent(String username, String email, String password) throws Exception {
+        registerStudent(username, email, password);
+        approveUser(email);
+        return login(email, password);
+    }
+
+    private void registerStudent(String username, String email, String password) throws Exception {
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -488,13 +643,17 @@ class AuthAndActivityIntegrationTest {
                       "password": "%s"
                     }
                     """.formatted(username, email, "student-" + username, "phone-" + username, password)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.token").isString());
-
-        return login(email, password);
+            .andExpect(status().isAccepted())
+            .andExpect(jsonPath("$.approvalStatus").value("PENDING"));
     }
 
     private String registerAndLoginStaff(String username, String email, String password) throws Exception {
+        registerStaff(username, email, password);
+        approveUser(email);
+        return login(email, password);
+    }
+
+    private void registerStaff(String username, String email, String password) throws Exception {
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -505,10 +664,15 @@ class AuthAndActivityIntegrationTest {
                       "password": "%s"
                     }
                     """.formatted(username, email, password)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.token").isString());
+            .andExpect(status().isAccepted())
+            .andExpect(jsonPath("$.approvalStatus").value("PENDING"));
+    }
 
-        return login(email, password);
+    private void approveUser(String email) {
+        User user = userRepository.findByEmailIgnoreCase(email)
+            .orElseThrow(() -> new IllegalStateException("Expected user for approval"));
+        user.setApprovalStatus(ApprovalStatus.APPROVED);
+        userRepository.save(user);
     }
 
     private String login(String email, String password) throws Exception {
@@ -540,6 +704,7 @@ class AuthAndActivityIntegrationTest {
         user.setEmail(email);
         user.setUserType(userType);
         user.setAdmin(isAdmin);
+        user.setApprovalStatus(ApprovalStatus.APPROVED);
         user.setStudentNumber(userType == UserType.STUDENT ? "student-" + username : null);
         user.setPhoneNumber(userType == UserType.STUDENT ? "phone-" + username : null);
         user.setPasswordHash(passwordEncoder.encode("password123"));

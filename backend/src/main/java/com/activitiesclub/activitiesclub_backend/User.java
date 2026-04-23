@@ -79,6 +79,12 @@ public class User {
     @Column(nullable = false, name = "is_admin")
     private boolean isAdmin;
 
+    @Getter
+    @Setter
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20, name = "approval_status")
+    private ApprovalStatus approvalStatus = ApprovalStatus.APPROVED;
+
     @PrePersist
     @PreUpdate
     void normalize() {

@@ -7,15 +7,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.activitiesclub.activitiesclub_backend.ApprovalStatus;
 import com.activitiesclub.activitiesclub_backend.User;
 import com.activitiesclub.activitiesclub_backend.UserType;
 import com.activitiesclub.activitiesclub_backend.UserRepository;
 import com.activitiesclub.activitiesclub_backend.dto.AuthResponse;
 import com.activitiesclub.activitiesclub_backend.dto.LoginRequest;
 import com.activitiesclub.activitiesclub_backend.dto.RegisterRequest;
+import com.activitiesclub.activitiesclub_backend.dto.RegistrationResponse;
 
 @Service
 public class AuthService {
+    private static final String PENDING_APPROVAL_MESSAGE = "Your registration is awaiting admin approval.";
+    private static final String DENIED_APPROVAL_MESSAGE = "Your registration request was denied. Please contact an admin before trying again.";
+    private static final String REGISTRATION_SUBMITTED_MESSAGE = "Registration submitted for admin approval.";
+
     private final UserRepository users;
     private final PasswordEncoder encoder;
     private final JwtService jwtService;
@@ -26,30 +32,40 @@ public class AuthService {
     this.jwtService = jwtService;
     }
 
-    public AuthResponse register(RegisterRequest req) {
+    public RegistrationResponse register(RegisterRequest req) {
         String normalizedEmail = normalizeEmail(req.email());
         String normalizedUsername = normalizeUsername(req.username());
         String normalizedStudentNumber = normalizeField(req.studentNumber());
         String normalizedPhoneNumber = normalizeField(req.phoneNumber());
+        User reusableDeniedUser = null;
 
-        if (users.existsByEmailIgnoreCase(normalizedEmail)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already used");
+        User existingUserByEmail = users.findByEmailIgnoreCase(normalizedEmail).orElse(null);
+        if (existingUserByEmail != null) {
+            if (existingUserByEmail.getApprovalStatus() != ApprovalStatus.DENIED) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already used");
+            }
+
+            reusableDeniedUser = existingUserByEmail;
         }
-        if (users.existsByUsernameIgnoreCase(normalizedUsername)) {
+        boolean usernameInUse = reusableDeniedUser == null
+            ? users.existsByUsernameIgnoreCase(normalizedUsername)
+            : users.existsByUsernameIgnoreCaseAndIdNot(normalizedUsername, reusableDeniedUser.getId());
+        if (usernameInUse) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already used");
         }
 
         String hash = encoder.encode(req.password());
-        User u = new User();
-        u.setUsername(normalizedUsername);
-        u.setEmail(normalizedEmail);
-        u.setUserType(req.userType());
-        u.setStudentNumber(resolveStudentNumber(req.userType(), normalizedStudentNumber));
-        u.setPhoneNumber(resolvePhoneNumber(req.userType(), normalizedPhoneNumber));
-        u.setPasswordHash(hash);
-        u.setAdmin(false);
-        User saved = users.save(u);
-        return new AuthResponse(jwtService.generate(saved));
+        User user = reusableDeniedUser != null ? reusableDeniedUser : new User();
+        user.setUsername(normalizedUsername);
+        user.setEmail(normalizedEmail);
+        user.setUserType(req.userType());
+        user.setStudentNumber(resolveStudentNumber(req.userType(), normalizedStudentNumber));
+        user.setPhoneNumber(resolvePhoneNumber(req.userType(), normalizedPhoneNumber));
+        user.setPasswordHash(hash);
+        user.setAdmin(false);
+        user.setApprovalStatus(ApprovalStatus.PENDING);
+        users.save(user);
+        return new RegistrationResponse(ApprovalStatus.PENDING, REGISTRATION_SUBMITTED_MESSAGE);
     }
     
     public AuthResponse login(LoginRequest req) {
@@ -57,6 +73,12 @@ public class AuthService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
         if (!encoder.matches(req.password(), user.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+        }
+        if (user.getApprovalStatus() == ApprovalStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, PENDING_APPROVAL_MESSAGE);
+        }
+        if (user.getApprovalStatus() == ApprovalStatus.DENIED) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, DENIED_APPROVAL_MESSAGE);
         }
         
         String token = jwtService.generate(user);

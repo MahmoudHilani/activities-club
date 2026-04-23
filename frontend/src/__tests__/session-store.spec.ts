@@ -58,4 +58,44 @@ describe('session store', () => {
     expect(sessionStore.user?.username).toBe('alice')
     expect(window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)).toBe('jwt-token')
   })
+
+  it('submits registration without establishing a session', async () => {
+    server.use(
+      http.post('http://localhost:8080/api/auth/register', async ({ request }) => {
+        const body = (await request.json()) as {
+          username: string
+          email: string
+          userType: string
+          studentNumber: string | null
+          phoneNumber: string | null
+          password: string
+        }
+
+        expect(body.email).toBe('alice@example.com')
+        return HttpResponse.json(
+          {
+            approvalStatus: 'PENDING',
+            message: 'Registration submitted for admin approval.',
+          },
+          { status: 202 },
+        )
+      }),
+    )
+
+    const sessionStore = useSessionStore()
+
+    const response = await sessionStore.register({
+      username: 'alice',
+      email: 'alice@example.com',
+      userType: 'STUDENT',
+      studentNumber: 'S1234567',
+      phoneNumber: '+3531234567',
+      password: 'password123',
+    })
+
+    expect(response.approvalStatus).toBe('PENDING')
+    expect(sessionStore.isAuthenticated).toBe(false)
+    expect(sessionStore.user).toBeNull()
+    expect(window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)).toBeNull()
+  })
 })

@@ -15,6 +15,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.activitiesclub.activitiesclub_backend.ApprovalStatus;
 import com.activitiesclub.activitiesclub_backend.User;
 import com.activitiesclub.activitiesclub_backend.UserRepository;
 
@@ -54,6 +55,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Long userId = jwtService.extractUserId(token);
             User user = userRepository.findById(userId)
                 .orElseThrow(() -> new JwtException("User not found"));
+            if (user.getApprovalStatus() != ApprovalStatus.APPROVED) {
+                throw new JwtException("User is not approved");
+            }
 
             AuthenticatedUser principal = AuthenticatedUser.from(user);
             UsernamePasswordAuthenticationToken authentication =

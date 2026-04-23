@@ -1,6 +1,6 @@
 import type { UserType } from '@/lib/api/types'
 import { apiClient } from '@/lib/api/client'
-import type { AuthResponse, UserResponse } from '@/lib/api/types'
+import type { AuthResponse, RegistrationResponse, UserResponse } from '@/lib/api/types'
 
 export interface LoginPayload {
   email: string
@@ -21,8 +21,8 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
   return data
 }
 
-export async function register(payload: RegisterPayload): Promise<AuthResponse> {
-  const { data } = await apiClient.post<AuthResponse>('/api/auth/register', payload)
+export async function register(payload: RegisterPayload): Promise<RegistrationResponse> {
+  const { data } = await apiClient.post<RegistrationResponse>('/api/auth/register', payload)
   return data
 }
 

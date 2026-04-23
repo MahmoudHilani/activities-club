@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 
 import { getCurrentUser, login as loginRequest, register as registerRequest } from '@/lib/api/auth'
 import type { LoginPayload, RegisterPayload } from '@/lib/api/auth'
-import type { UserResponse } from '@/lib/api/types'
+import type { RegistrationResponse, UserResponse } from '@/lib/api/types'
 import {
   clearStoredToken,
   getStoredToken,
@@ -51,9 +51,8 @@ export const useSessionStore = defineStore('session', () => {
     await establishSession(response.token)
   }
 
-  async function register(payload: RegisterPayload): Promise<void> {
-    const response = await registerRequest(payload)
-    await establishSession(response.token)
+  async function register(payload: RegisterPayload): Promise<RegistrationResponse> {
+    return registerRequest(payload)
   }
 
   function logout(): void {

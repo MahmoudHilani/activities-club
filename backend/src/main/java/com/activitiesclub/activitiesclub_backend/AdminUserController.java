@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.activitiesclub.activitiesclub_backend.auth.AuthenticatedUser;
+import com.activitiesclub.activitiesclub_backend.dto.UpdateUserApprovalStatusRequest;
 import com.activitiesclub.activitiesclub_backend.dto.UpdateUserAdminRequest;
 import com.activitiesclub.activitiesclub_backend.dto.UserResponse;
 
@@ -28,6 +29,14 @@ public class AdminUserController {
     @GetMapping
     public List<UserResponse> list() {
         return userManagementService.listUsers();
+    }
+
+    @PatchMapping("/{userId}/approval")
+    public UserResponse updateApprovalStatus(
+        @PathVariable Long userId,
+        @Valid @RequestBody UpdateUserApprovalStatusRequest request
+    ) {
+        return userManagementService.updateApprovalStatus(userId, request.approvalStatus());
     }
 
     @PatchMapping("/{userId}/admin")

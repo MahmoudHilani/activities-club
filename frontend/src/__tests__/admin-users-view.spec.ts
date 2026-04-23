@@ -19,12 +19,21 @@ describe('AdminUsersView', () => {
       userType: 'STAFF' as const,
       studentNumber: null,
       phoneNumber: null,
+      approvalStatus: 'APPROVED' as const,
       isAdmin: false,
     }
 
     server.use(
       http.get('http://localhost:8080/api/admin/users', () =>
         HttpResponse.json([
+          {
+            ...sampleUser,
+            id: 3,
+            username: 'pending-member',
+            email: 'pending@example.com',
+            approvalStatus: 'PENDING',
+            createdAt: '2026-03-16T10:00:00Z',
+          },
           managedUser,
           {
             ...sampleUser,
@@ -34,6 +43,7 @@ describe('AdminUsersView', () => {
             userType: 'STAFF',
             studentNumber: null,
             phoneNumber: null,
+            approvalStatus: 'APPROVED',
             isAdmin: true,
           },
         ]),
@@ -69,6 +79,9 @@ describe('AdminUsersView', () => {
     }
 
     expect(await screen.findByText('staff-member')).toBeTruthy()
+    const headings = screen.getAllByRole('heading', { level: 2 })
+    expect(headings[0]?.textContent).toContain('pending-member')
+    expect(screen.queryByText('STUDENT')).toBeNull()
 
     await user.click(screen.getByRole('button', { name: 'Grant admin' }))
 
@@ -79,6 +92,78 @@ describe('AdminUsersView', () => {
       }
 
       expect(within(managedUserCard).getByRole('button', { name: 'Remove admin' })).toBeTruthy()
+    })
+  })
+
+  it('approves pending users from the same list', async () => {
+    let pendingUser = {
+      ...sampleUser,
+      id: 2,
+      username: 'pending-member',
+      email: 'pending@example.com',
+      approvalStatus: 'PENDING' as const,
+      isAdmin: false,
+    }
+
+    server.use(
+      http.get('http://localhost:8080/api/admin/users', () =>
+        HttpResponse.json([
+          pendingUser,
+          {
+            ...sampleUser,
+            id: 99,
+            username: 'admin',
+            email: 'admin@example.com',
+            userType: 'STAFF',
+            studentNumber: null,
+            phoneNumber: null,
+            approvalStatus: 'APPROVED',
+            isAdmin: true,
+          },
+        ]),
+      ),
+      http.patch('http://localhost:8080/api/admin/users/2/approval', async ({ request }) => {
+        const body = (await request.json()) as { approvalStatus: 'APPROVED' | 'DENIED' }
+        pendingUser = {
+          ...pendingUser,
+          approvalStatus: body.approvalStatus,
+        }
+        return HttpResponse.json(pendingUser)
+      }),
+    )
+
+    const user = userEvent.setup()
+    const { pinia } = await renderRoute({
+      route: '/admin/users',
+      adminUsersComponent: AdminUsersView,
+    })
+
+    const sessionStore = useSessionStore(pinia)
+    sessionStore.isHydrated = true
+    sessionStore.token = 'token'
+    sessionStore.user = {
+      ...sampleUser,
+      id: 99,
+      username: 'admin',
+      email: 'admin@example.com',
+      userType: 'STAFF',
+      studentNumber: null,
+      phoneNumber: null,
+      approvalStatus: 'APPROVED',
+      isAdmin: true,
+    }
+
+    expect(await screen.findByRole('button', { name: 'Approve' })).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Approve' }))
+
+    await waitFor(() => {
+      const pendingUserCard = screen.getByText('pending-member').closest('article')
+      if (!pendingUserCard) {
+        throw new Error('Expected the pending user card to exist.')
+      }
+
+      expect(within(pendingUserCard).getByRole('button', { name: 'Grant admin' })).toBeTruthy()
     })
   })
 
@@ -94,6 +179,7 @@ describe('AdminUsersView', () => {
             userType: 'STAFF',
             studentNumber: null,
             phoneNumber: null,
+            approvalStatus: 'APPROVED',
             isAdmin: true,
           },
         ]),
@@ -116,11 +202,12 @@ describe('AdminUsersView', () => {
       userType: 'STAFF',
       studentNumber: null,
       phoneNumber: null,
+      approvalStatus: 'APPROVED',
       isAdmin: true,
     }
 
     const button = await screen.findByRole('button', { name: 'Remove admin' })
     expect(button.getAttribute('disabled')).not.toBeNull()
-    expect(screen.getByText('Current session')).toBeTruthy()
+    expect(screen.queryByText('Current session')).toBeNull()
   })
 })

@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { mapRegisterError } from '@/lib/api/errors'
-import { resolveRedirectPath } from '@/lib/redirect'
 import { useSessionStore } from '@/stores/session'
 
 const userTypeOptions = [
@@ -23,6 +22,7 @@ const route = useRoute()
 const router = useRouter()
 const sessionStore = useSessionStore()
 const serverError = ref('')
+const submittedMessage = ref('')
 
 const registerSchema = toTypedSchema(
   z
@@ -84,7 +84,7 @@ const registerSchema = toTypedSchema(
     }),
 )
 
-const { defineField, errors, handleSubmit, isSubmitting } = useForm({
+const { defineField, errors, handleSubmit, isSubmitting, resetForm } = useForm({
   validationSchema: registerSchema,
   initialValues: {
     username: '',
@@ -113,11 +113,20 @@ watch(userType, (value) => {
   }
 })
 
+async function goToLogin(): Promise<void> {
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : undefined
+
+  await router.replace({
+    name: 'auth',
+    query: redirect ? { redirect } : {},
+  })
+}
+
 const onSubmit = handleSubmit(async (values) => {
   serverError.value = ''
 
   try {
-    await sessionStore.register({
+    const response = await sessionStore.register({
       username: values.username,
       email: values.email,
       userType: values.userType,
@@ -125,7 +134,8 @@ const onSubmit = handleSubmit(async (values) => {
       phoneNumber: values.userType === 'STUDENT' ? values.phoneNumber.trim() : null,
       password: values.password,
     })
-    await router.push(resolveRedirectPath(route.query.redirect))
+    submittedMessage.value = response.message
+    resetForm()
   } catch (error) {
     serverError.value = mapRegisterError(error)
   }
@@ -133,7 +143,19 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <form class="space-y-5" novalidate @submit.prevent="onSubmit">
+  <div v-if="submittedMessage" class="space-y-5 rounded-[1.85rem] border border-white/70 bg-white/65 p-6">
+    <div class="space-y-2">
+      <h2 class="text-xl font-bold text-foreground">Awaiting approval</h2>
+      <p class="text-sm text-muted-foreground">
+        {{ submittedMessage }}
+      </p>
+    </div>
+    <Button class="w-full" type="button" variant="outline" @click="goToLogin">
+      Back to login
+    </Button>
+  </div>
+
+  <form v-else class="space-y-5" novalidate @submit.prevent="onSubmit">
     <Alert v-if="serverError" variant="destructive">
       {{ serverError }}
     </Alert>

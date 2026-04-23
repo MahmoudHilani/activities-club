@@ -3,7 +3,13 @@ export interface AuthResponse {
 }
 
 export type UserType = 'STUDENT' | 'STAFF'
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'DENIED'
 export type ReservationStatus = 'RESERVED' | 'WAITLISTED' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW'
+
+export interface RegistrationResponse {
+  approvalStatus: ApprovalStatus
+  message: string
+}
 
 export interface UserResponse {
   id: number
@@ -12,6 +18,7 @@ export interface UserResponse {
   studentNumber: string | null
   phoneNumber: string | null
   userType: UserType
+  approvalStatus: ApprovalStatus
   isAdmin: boolean
   createdAt: string
   updatedAt: string

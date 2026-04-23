@@ -88,19 +88,14 @@ describe('AuthView', () => {
     server.use(
       http.post('http://localhost:8080/api/auth/register', async ({ request }) => {
         capturedPayload = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json({ token: 'jwt-token' })
+        return HttpResponse.json(
+          {
+            approvalStatus: 'PENDING',
+            message: 'Registration submitted for admin approval.',
+          },
+          { status: 202 },
+        )
       }),
-      http.get('http://localhost:8080/api/users/me', () =>
-        HttpResponse.json({
-          ...sampleUser,
-          id: 2,
-          username: 'staff',
-          email: 'staff@example.com',
-          userType: 'STAFF',
-          studentNumber: null,
-          phoneNumber: null,
-        }),
-      ),
     )
 
     const user = userEvent.setup()
@@ -131,6 +126,10 @@ describe('AuthView', () => {
         phoneNumber: null,
       })
     })
+
+    expect(await screen.findByText('Awaiting approval')).toBeTruthy()
+    expect(screen.getByText('Registration submitted for admin approval.')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('shows a helpful error on invalid login', async () => {
@@ -153,6 +152,65 @@ describe('AuthView', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
 
     expect(await screen.findByText('Email or password is incorrect.')).toBeTruthy()
+  })
+
+  it('shows the approval-pending message on blocked login', async () => {
+    server.use(
+      http.post(
+        'http://localhost:8080/api/auth/login',
+        () =>
+          HttpResponse.json(
+            { detail: 'Your registration is awaiting admin approval.' },
+            { status: 403 },
+          ),
+      ),
+    )
+
+    const user = userEvent.setup()
+
+    await renderRoute({
+      route: '/auth',
+      authComponent: AuthView,
+    })
+
+    await user.type(getInput('login-email'), 'alice@example.com')
+    await user.type(getInput('login-password'), 'password123')
+    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    expect(await screen.findByText('Your registration is awaiting admin approval.')).toBeTruthy()
+  })
+
+  it('shows the denial message on blocked login', async () => {
+    server.use(
+      http.post(
+        'http://localhost:8080/api/auth/login',
+        () =>
+          HttpResponse.json(
+            {
+              detail:
+                'Your registration request was denied. Please contact an admin before trying again.',
+            },
+            { status: 403 },
+          ),
+      ),
+    )
+
+    const user = userEvent.setup()
+
+    await renderRoute({
+      route: '/auth',
+      authComponent: AuthView,
+    })
+
+    await user.type(getInput('login-email'), 'alice@example.com')
+    await user.type(getInput('login-password'), 'password123')
+    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    expect(
+      await screen.findByText(
+        'Your registration request was denied. Please contact an admin before trying again.',
+      ),
+    ).toBeTruthy()
   })
 
   it('redirects to the requested detail page after a successful login', async () => {
@@ -180,12 +238,17 @@ describe('AuthView', () => {
     })
   })
 
-  it('redirects to the requested detail page after registration', async () => {
+  it('keeps the user on auth and offers login after registration', async () => {
     server.use(
       http.post('http://localhost:8080/api/auth/register', () =>
-        HttpResponse.json({ token: 'jwt-token' }),
+        HttpResponse.json(
+          {
+            approvalStatus: 'PENDING',
+            message: 'Registration submitted for admin approval.',
+          },
+          { status: 202 },
+        ),
       ),
-      http.get('http://localhost:8080/api/users/me', () => HttpResponse.json(sampleUser)),
     )
 
     const user = userEvent.setup()
@@ -203,7 +266,15 @@ describe('AuthView', () => {
     await user.click(screen.getByRole('button', { name: 'Create account' }))
 
     await waitFor(() => {
-      expect(router.currentRoute.value.fullPath).toBe('/activities/9')
+      expect(router.currentRoute.value.fullPath).toBe('/auth?mode=register&redirect=/activities/9')
+    })
+
+    expect(await screen.findByRole('button', { name: 'Back to login' })).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Back to login' }))
+
+    await waitFor(() => {
+      expect(router.currentRoute.value.fullPath).toBe('/auth?redirect=/activities/9')
     })
   })
 })

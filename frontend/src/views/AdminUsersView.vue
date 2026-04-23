@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { Shield, ShieldOff } from 'lucide-vue-next'
+import { Shield, ShieldOff, UserRoundX, UserRoundCheck } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { getApiMessage, mapUsersError } from '@/lib/api/errors'
-import { getAdminUsers, updateAdminUserAccess } from '@/lib/api/users'
-import type { UserResponse } from '@/lib/api/types'
+import { getAdminUsers, updateAdminUserAccess, updateUserApprovalStatus } from '@/lib/api/users'
+import type { ApprovalStatus, UserResponse } from '@/lib/api/types'
 import { useSessionStore } from '@/stores/session'
 
 const queryClient = useQueryClient()
@@ -19,19 +19,53 @@ const usersQuery = useQuery(() => ({
   queryFn: () => getAdminUsers(),
 }))
 
-const users = computed(() => usersQuery.data.value ?? [])
+const users = computed(() =>
+  [...(usersQuery.data.value ?? [])].sort((left, right) => {
+    const approvalOrder = (status: ApprovalStatus) => (status === 'PENDING' ? 0 : 1)
+    const orderDifference = approvalOrder(left.approvalStatus) - approvalOrder(right.approvalStatus)
+
+    if (orderDifference !== 0) {
+      return orderDifference
+    }
+
+    return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+  }),
+)
+
+function replaceCachedUser(updatedUser: UserResponse): void {
+  queryClient.setQueryData<UserResponse[]>(['admin-users'], (currentUsers = []) =>
+    currentUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user)),
+  )
+}
+
 const adminToggleMutation = useMutation(() => ({
   mutationFn: ({ userId, isAdmin }: { userId: number; isAdmin: boolean }) =>
     updateAdminUserAccess(userId, isAdmin),
   onSuccess: async (updatedUser) => {
     actionError.value = ''
-    queryClient.setQueryData<UserResponse[]>(['admin-users'], (currentUsers = []) =>
-      currentUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user)),
-    )
+    replaceCachedUser(updatedUser)
     await queryClient.invalidateQueries({ queryKey: ['admin-users'] })
   },
   onError: (error) => {
     actionError.value = getApiMessage(error) ?? 'We could not update admin access right now.'
+  },
+}))
+
+const approvalMutation = useMutation(() => ({
+  mutationFn: ({
+    userId,
+    approvalStatus,
+  }: {
+    userId: number
+    approvalStatus: Exclude<ApprovalStatus, 'PENDING'>
+  }) => updateUserApprovalStatus(userId, approvalStatus),
+  onSuccess: async (updatedUser) => {
+    actionError.value = ''
+    replaceCachedUser(updatedUser)
+    await queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+  },
+  onError: (error) => {
+    actionError.value = getApiMessage(error) ?? 'We could not update registration approval right now.'
   },
 }))
 
@@ -43,6 +77,16 @@ function toggleAdminAccess(user: UserResponse): void {
   adminToggleMutation.mutate({
     userId: user.id,
     isAdmin: !user.isAdmin,
+  })
+}
+
+function updateApprovalStatus(
+  user: UserResponse,
+  approvalStatus: Exclude<ApprovalStatus, 'PENDING'>,
+): void {
+  approvalMutation.mutate({
+    userId: user.id,
+    approvalStatus,
   })
 }
 
@@ -92,24 +136,10 @@ function contactValue(value: string | null): string {
                 {{ user.username }}
               </h2>
               <span
+                v-if="user.userType === 'STAFF'"
                 class="rounded-full bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground"
               >
-                {{ user.userType }}
-              </span>
-              <span
-                :class="
-                  user.isAdmin
-                    ? 'rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary'
-                    : 'rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground'
-                "
-              >
-                {{ user.isAdmin ? 'Admin' : 'Standard access' }}
-              </span>
-              <span
-                v-if="isCurrentUser(user)"
-                class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-amber-800"
-              >
-                Current session
+                Staff
               </span>
             </div>
 
@@ -127,7 +157,30 @@ function contactValue(value: string | null): string {
           </div>
 
           <div class="flex w-full flex-col gap-2 xl:min-w-[14rem] xl:max-w-[14rem]">
+            <template v-if="user.approvalStatus === 'PENDING'">
+              <Button
+                :disabled="approvalMutation.isPending.value"
+                class="w-full justify-center"
+                size="sm"
+                @click="updateApprovalStatus(user, 'APPROVED')"
+              >
+                <UserRoundCheck class="h-4 w-4" />
+                Approve
+              </Button>
+              <Button
+                :disabled="approvalMutation.isPending.value"
+                class="w-full justify-center"
+                size="sm"
+                variant="outline"
+                @click="updateApprovalStatus(user, 'DENIED')"
+              >
+                <UserRoundX class="h-4 w-4" />
+                Deny
+              </Button>
+            </template>
+
             <Button
+              v-else-if="user.approvalStatus === 'APPROVED'"
               :disabled="adminToggleMutation.isPending.value || isCurrentUser(user)"
               class="w-full justify-center"
               size="sm"
@@ -138,6 +191,13 @@ function contactValue(value: string | null): string {
               <Shield v-else class="h-4 w-4" />
               {{ user.isAdmin ? 'Remove admin' : 'Grant admin' }}
             </Button>
+
+            <div
+              v-else
+              class="rounded-2xl border border-dashed border-rose-200 bg-rose-50/70 px-4 py-3 text-sm text-rose-700"
+            >
+              This registration was denied. A new signup with the same email will reopen it.
+            </div>
           </div>
         </div>
       </article>

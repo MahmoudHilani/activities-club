@@ -1,6 +1,7 @@
 package com.activitiesclub.activitiesclub_backend;
 
 import java.util.List;
+import java.util.Comparator;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,12 @@ public class UserManagementService {
 
     @Transactional(readOnly = true)
     public List<UserResponse> listUsers() {
-        return userRepository.findAllByOrderByCreatedAtDesc().stream().map(UserResponse::from).toList();
+        return userRepository.findAllByOrderByCreatedAtDesc().stream()
+            .sorted(Comparator
+                .comparing((User user) -> user.getApprovalStatus() != ApprovalStatus.PENDING)
+                .thenComparing(User::getCreatedAt, Comparator.reverseOrder()))
+            .map(UserResponse::from)
+            .toList();
     }
 
     @Transactional
@@ -31,6 +37,10 @@ public class UserManagementService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
+        if (user.getApprovalStatus() != ApprovalStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only approved users can receive admin access");
+        }
+
         if (user.isAdmin() == isAdmin) {
             return UserResponse.from(user);
         }
@@ -40,6 +50,23 @@ public class UserManagementService {
         }
 
         user.setAdmin(isAdmin);
+        return UserResponse.from(userRepository.save(user));
+    }
+
+    @Transactional
+    public UserResponse updateApprovalStatus(Long userId, ApprovalStatus approvalStatus) {
+        if (approvalStatus == ApprovalStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Approval status must be APPROVED or DENIED");
+        }
+
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (user.getApprovalStatus() != ApprovalStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only pending users can be approved or denied");
+        }
+
+        user.setApprovalStatus(approvalStatus);
         return UserResponse.from(userRepository.save(user));
     }
 
