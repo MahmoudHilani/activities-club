@@ -178,7 +178,7 @@ Write-Host "Starting Postgres in Docker..." -ForegroundColor Cyan
 docker compose up -d db | Out-Host
 
 $dbReady = $false
-for ($attempt = 0; $attempt -lt 30; $attempt++) {
+for ($attempt = 0; $attempt -lt 90; $attempt++) {
     docker compose exec -T db pg_isready -U $dbUser -d $dbName *> $null
     if ($LASTEXITCODE -eq 0) {
         $dbReady = $true
@@ -189,7 +189,7 @@ for ($attempt = 0; $attempt -lt 30; $attempt++) {
 }
 
 if (-not $dbReady) {
-    throw "Database did not become ready in time."
+    throw "Database did not become ready in time after 180 seconds."
 }
 
 if ($WithPgAdmin) {

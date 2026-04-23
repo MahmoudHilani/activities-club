@@ -64,3 +64,7 @@ export function mapReservationError(error: unknown): string {
 
   return getApiMessage(error) ?? 'We could not update your reservation right now.'
 }
+
+export function mapUsersError(error: unknown): string {
+  return getApiMessage(error) ?? 'We could not load user management right now.'
+}

@@ -10,7 +10,7 @@ import { useSessionStore } from '@/stores/session'
 const route = useRoute()
 const sessionStore = useSessionStore()
 
-const isAdmin = computed(() => sessionStore.user?.role === 'ADMIN')
+const isAdmin = computed(() => sessionStore.user?.isAdmin === true)
 const isCreateRoute = computed(() => route.name === 'admin-activity-create')
 const isActivityDetailRoute = computed(() => route.name === 'activity-detail')
 const shouldShowFab = computed(() => isAdmin.value && !isActivityDetailRoute.value)

@@ -6,16 +6,19 @@ import java.util.List;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import com.activitiesclub.activitiesclub_backend.Role;
 import com.activitiesclub.activitiesclub_backend.User;
 
-public record AuthenticatedUser(Long id, String username, String email, Role role) implements Principal {
+public record AuthenticatedUser(Long id, String username, String email, boolean isAdmin) implements Principal {
     public static AuthenticatedUser from(User user) {
-        return new AuthenticatedUser(user.getId(), user.getUsername(), user.getEmail(), user.getRole());
+        return new AuthenticatedUser(user.getId(), user.getUsername(), user.getEmail(), user.isAdmin());
     }
 
     public List<? extends GrantedAuthority> authorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        if (!isAdmin) {
+            return List.of();
+        }
+
+        return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"));
     }
 
     @Override

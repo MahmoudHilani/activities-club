@@ -38,7 +38,8 @@ describe('AdminCreateActivityFab', () => {
     sessionStore.token = 'token'
     sessionStore.user = {
       ...sampleUser,
-      role: 'ADMIN',
+      userType: 'STAFF',
+      isAdmin: true,
     }
 
     await router.push('/activities')
@@ -84,7 +85,8 @@ describe('AdminCreateActivityFab', () => {
     sessionStore.token = 'token'
     sessionStore.user = {
       ...sampleUser,
-      role: 'ADMIN',
+      userType: 'STAFF',
+      isAdmin: true,
     }
 
     await router.push('/activities/1')

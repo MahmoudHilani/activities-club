@@ -42,6 +42,15 @@ class AuthAndActivityIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private com.activitiesclub.activitiesclub_backend.auth.JwtService jwtService;
+
     @Test
     void protectedRoutesRequireBearerToken() throws Exception {
         mockMvc.perform(get("/api/users/me"))
@@ -49,19 +58,34 @@ class AuthAndActivityIntegrationTest {
     }
 
     @Test
-    void registerSupportsAdminFlagAndAdminEndpointsRequireAdmin() throws Exception {
-        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
-        String studentToken = registerAndLogin("alice", "alice@example.com", "password123", false);
+    void registerSupportsStudentAndStaffUsersAndAdminEndpointsRequireAdmin() throws Exception {
+        String adminToken = createAdminToken();
+        String studentToken = registerAndLoginStudent("alice", "alice@example.com", "password123");
+        String staffToken = registerAndLoginStaff("sam", "sam@example.com", "password123");
 
         mockMvc.perform(get("/api/users/me")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.role").value("ADMIN"));
+            .andExpect(jsonPath("$.userType").value("STAFF"))
+            .andExpect(jsonPath("$.isAdmin").value(true))
+            .andExpect(jsonPath("$.studentNumber").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.phoneNumber").value(org.hamcrest.Matchers.nullValue()));
 
         mockMvc.perform(get("/api/users/me")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + studentToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.role").value("STUDENT"));
+            .andExpect(jsonPath("$.userType").value("STUDENT"))
+            .andExpect(jsonPath("$.isAdmin").value(false))
+            .andExpect(jsonPath("$.studentNumber").value("student-alice"))
+            .andExpect(jsonPath("$.phoneNumber").value("phone-alice"));
+
+        mockMvc.perform(get("/api/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + staffToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.userType").value("STAFF"))
+            .andExpect(jsonPath("$.isAdmin").value(false))
+            .andExpect(jsonPath("$.studentNumber").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.phoneNumber").value(org.hamcrest.Matchers.nullValue()));
 
         mockMvc.perform(get("/api/admin/activities")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + studentToken))
@@ -73,8 +97,63 @@ class AuthAndActivityIntegrationTest {
     }
 
     @Test
+    void adminCanListUsersAndToggleAdminAccess() throws Exception {
+        String adminToken = createAdminToken();
+        User managedUser = createUser("staff-member", "staff@example.com", UserType.STAFF, false);
+
+        mockMvc.perform(get("/api/admin/users")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(2)))
+            .andExpect(jsonPath("$[0].username").value("staff-member"))
+            .andExpect(jsonPath("$[0].userType").value("STAFF"))
+            .andExpect(jsonPath("$[0].isAdmin").value(false));
+
+        mockMvc.perform(patch("/api/admin/users/{userId}/admin", managedUser.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "isAdmin": true
+                    }
+                    """)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(managedUser.getId()))
+            .andExpect(jsonPath("$.isAdmin").value(true))
+            .andExpect(jsonPath("$.userType").value("STAFF"));
+    }
+
+    @Test
+    void adminCannotChangeOwnAccess() throws Exception {
+        User currentAdmin = createUser("admin", "admin@example.com", UserType.STAFF, true);
+        String adminToken = tokenFor(currentAdmin);
+
+        mockMvc.perform(patch("/api/admin/users/{userId}/admin", currentAdmin.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "isAdmin": false
+                    }
+                    """)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void adminUpdateRequiresExplicitIsAdminFlag() throws Exception {
+        String adminToken = createAdminToken();
+        User managedUser = createUser("staff-member", "staff@example.com", UserType.STAFF, false);
+
+        mockMvc.perform(patch("/api/admin/users/{userId}/admin", managedUser.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void adminCanCreateUpdateAndDeleteDraftActivitiesWithImages() throws Exception {
-        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        String adminToken = createAdminToken();
         long activityId = createAdminActivity(adminToken, "Chess Night", "image/png", "poster.png", "PUBLIC", 20, "15.50");
 
         mockMvc.perform(multipart(HttpMethod.PUT, "/api/admin/activities/{activityId}", activityId)
@@ -94,7 +173,7 @@ class AuthAndActivityIntegrationTest {
 
     @Test
     void createValidatesUploadTypeSizeAndTimeWindow() throws Exception {
-        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        String adminToken = createAdminToken();
 
         mockMvc.perform(multipart("/api/admin/activities")
                 .file(activityJsonPart("Bad Image", "PUBLIC", 20, "10.00"))
@@ -124,8 +203,8 @@ class AuthAndActivityIntegrationTest {
 
     @Test
     void publicActivitiesEndpointOnlyReturnsPublishedPublicActivitiesAndIncludesCurrentUserReservationState() throws Exception {
-        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
-        String studentToken = registerAndLogin("alice", "alice@example.com", "password123", false);
+        String adminToken = createAdminToken();
+        String studentToken = registerAndLoginStudent("alice", "alice@example.com", "password123");
         long publicActivityId = createAdminActivity(adminToken, "Open Mic", "image/png", "poster.png", "PUBLIC", 2, "0");
         long privateActivityId = createAdminActivity(adminToken, "Private Planning", "image/png", "poster.png", "PRIVATE", 2, "0");
 
@@ -150,7 +229,7 @@ class AuthAndActivityIntegrationTest {
 
     @Test
     void publicActivityDetailEndpointReturnsPublishedPublicActivityForAnonymousUsers() throws Exception {
-        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        String adminToken = createAdminToken();
         long activityId = createAdminActivity(adminToken, "Open Mic", "image/png", "poster.png", "PUBLIC", 2, "0");
 
         publishActivity(adminToken, activityId).andExpect(status().isOk());
@@ -165,7 +244,7 @@ class AuthAndActivityIntegrationTest {
 
     @Test
     void publicActivityDetailEndpointIgnoresInvalidBearerTokenAndFallsBackToAnonymous() throws Exception {
-        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        String adminToken = createAdminToken();
         long activityId = createAdminActivity(adminToken, "Open Mic", "image/png", "poster.png", "PUBLIC", 2, "0");
 
         publishActivity(adminToken, activityId).andExpect(status().isOk());
@@ -179,8 +258,8 @@ class AuthAndActivityIntegrationTest {
 
     @Test
     void publicActivityDetailEndpointIncludesCurrentUserReservationStateForAuthenticatedUsers() throws Exception {
-        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
-        String studentToken = registerAndLogin("alice", "alice@example.com", "password123", false);
+        String adminToken = createAdminToken();
+        String studentToken = registerAndLoginStudent("alice", "alice@example.com", "password123");
         long activityId = createAdminActivity(adminToken, "Workshop", "image/png", "poster.png", "PUBLIC", 2, "0");
 
         publishActivity(adminToken, activityId).andExpect(status().isOk());
@@ -200,7 +279,7 @@ class AuthAndActivityIntegrationTest {
 
     @Test
     void publicActivityDetailEndpointReturnsNotFoundForNonPublicActivities() throws Exception {
-        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        String adminToken = createAdminToken();
         long publicActivityId = createAdminActivity(adminToken, "Cancelled Event", "image/png", "poster.png", "PUBLIC", 2, "0");
         long privateActivityId = createAdminActivity(adminToken, "Private Planning", "image/png", "poster.png", "PRIVATE", 2, "0");
         long draftActivityId = createAdminActivity(adminToken, "Draft Workshop", "image/png", "poster.png", "PUBLIC", 2, "0");
@@ -227,9 +306,9 @@ class AuthAndActivityIntegrationTest {
 
     @Test
     void waitlistReservationIsPromotedWhenConfirmedReservationIsCancelled() throws Exception {
-        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
-        String firstStudentToken = registerAndLogin("alice", "alice@example.com", "password123", false);
-        String secondStudentToken = registerAndLogin("bob", "bob@example.com", "password123", false);
+        String adminToken = createAdminToken();
+        String firstStudentToken = registerAndLoginStudent("alice", "alice@example.com", "password123");
+        String secondStudentToken = registerAndLoginStudent("bob", "bob@example.com", "password123");
 
         long activityId = createAdminActivity(adminToken, "Workshop", "image/png", "poster.png", "PUBLIC", 1, "25.00");
         publishActivity(adminToken, activityId).andExpect(status().isOk());
@@ -261,10 +340,10 @@ class AuthAndActivityIntegrationTest {
 
     @Test
     void adminCanFetchReservationRosterForActivity() throws Exception {
-        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
-        String firstStudentToken = registerAndLogin("alice", "alice@example.com", "password123", false);
-        String secondStudentToken = registerAndLogin("bob", "bob@example.com", "password123", false);
-        String thirdStudentToken = registerAndLogin("cara", "cara@example.com", "password123", false);
+        String adminToken = createAdminToken();
+        String firstStudentToken = registerAndLoginStudent("alice", "alice@example.com", "password123");
+        String secondStudentToken = registerAndLoginStudent("bob", "bob@example.com", "password123");
+        String thirdStudentToken = registerAndLoginStudent("cara", "cara@example.com", "password123");
 
         long activityId = createAdminActivity(adminToken, "Workshop", "image/png", "poster.png", "PUBLIC", 1, "25.00");
         publishActivity(adminToken, activityId).andExpect(status().isOk());
@@ -311,8 +390,8 @@ class AuthAndActivityIntegrationTest {
 
     @Test
     void reservationRosterRequiresAdminAndReturnsNotFoundForUnknownActivity() throws Exception {
-        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
-        String studentToken = registerAndLogin("alice", "alice@example.com", "password123", false);
+        String adminToken = createAdminToken();
+        String studentToken = registerAndLoginStudent("alice", "alice@example.com", "password123");
         long activityId = createAdminActivity(adminToken, "Chess Night", "image/png", "poster.png", "PUBLIC", 10, "0");
 
         mockMvc.perform(get("/api/admin/activities/{activityId}/reservations", activityId)
@@ -326,8 +405,8 @@ class AuthAndActivityIntegrationTest {
 
     @Test
     void cancelBlocksDeletionAfterReservationHistoryExists() throws Exception {
-        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
-        String studentToken = registerAndLogin("alice", "alice@example.com", "password123", false);
+        String adminToken = createAdminToken();
+        String studentToken = registerAndLoginStudent("alice", "alice@example.com", "password123");
 
         long activityId = createAdminActivity(adminToken, "Cinema Night", "image/png", "poster.png", "PUBLIC", 5, "8.00");
         publishActivity(adminToken, activityId).andExpect(status().isOk());
@@ -348,7 +427,7 @@ class AuthAndActivityIntegrationTest {
 
     @Test
     void cancelledActivitiesCanBeRepublishedAndDeletedWithoutReservationHistory() throws Exception {
-        String adminToken = registerAndLogin("admin", "admin@example.com", "password123", true);
+        String adminToken = createAdminToken();
 
         long activityId = createAdminActivity(adminToken, "Cinema Night", "image/png", "poster.png", "PUBLIC", 5, "8.00");
 
@@ -396,20 +475,43 @@ class AuthAndActivityIntegrationTest {
             .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, org.hamcrest.Matchers.containsString("authorization")));
     }
 
-    private String registerAndLogin(String username, String email, String password, boolean isAdmin) throws Exception {
+    private String registerAndLoginStudent(String username, String email, String password) throws Exception {
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
                       "username": "%s",
                       "email": "%s",
-                      "password": "%s",
-                      "isAdmin": %s
+                      "userType": "STUDENT",
+                      "studentNumber": "%s",
+                      "phoneNumber": "%s",
+                      "password": "%s"
                     }
-                    """.formatted(username, email, password, isAdmin)))
+                    """.formatted(username, email, "student-" + username, "phone-" + username, password)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.token").isString());
 
+        return login(email, password);
+    }
+
+    private String registerAndLoginStaff(String username, String email, String password) throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "username": "%s",
+                      "email": "%s",
+                      "userType": "STAFF",
+                      "password": "%s"
+                    }
+                    """.formatted(username, email, password)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.token").isString());
+
+        return login(email, password);
+    }
+
+    private String login(String email, String password) throws Exception {
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -422,6 +524,26 @@ class AuthAndActivityIntegrationTest {
             .andReturn();
 
         return readTextField(loginResult, "token");
+    }
+
+    private String createAdminToken() {
+        return tokenFor(createUser("admin", "admin@example.com", UserType.STAFF, true));
+    }
+
+    private String tokenFor(User user) {
+        return jwtService.generate(user);
+    }
+
+    private User createUser(String username, String email, UserType userType, boolean isAdmin) {
+        User user = new User();
+        user.setUsername(username);
+        user.setEmail(email);
+        user.setUserType(userType);
+        user.setAdmin(isAdmin);
+        user.setStudentNumber(userType == UserType.STUDENT ? "student-" + username : null);
+        user.setPhoneNumber(userType == UserType.STUDENT ? "phone-" + username : null);
+        user.setPasswordHash(passwordEncoder.encode("password123"));
+        return userRepository.save(user);
     }
 
     private long createAdminActivity(

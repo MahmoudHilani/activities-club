@@ -112,7 +112,7 @@ public class ReservationService {
     }
 
     private void assertReservableMember(AuthenticatedUser currentUser) {
-        if (currentUser.role() == Role.ADMIN) {
+        if (currentUser.isAdmin()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admins cannot reserve activities");
         }
     }

@@ -16,8 +16,11 @@ class UserRepositoryTest {
         User user = new User();
         user.setUsername("alice");
         user.setEmail("Alice@example.com");
+        user.setStudentNumber("S1234567");
+        user.setPhoneNumber("+3531234567");
         user.setPasswordHash("hash");
-        user.setRole(Role.STUDENT);
+        user.setUserType(UserType.STUDENT);
+        user.setAdmin(false);
         userRepository.save(user);
 
         assertThat(userRepository.existsByEmailIgnoreCase("alice@example.com")).isTrue();

@@ -55,11 +55,82 @@ describe('AuthView', () => {
 
     await user.type(getInput('register-username'), 'alice')
     await user.type(getInput('register-email'), 'alice@example.com')
+    await user.type(getInput('register-student-number'), 'S1234567')
+    await user.type(getInput('register-phone-number'), '+3531234567')
     await user.type(getInput('register-password'), 'password123')
     await user.type(getInput('register-confirm-password'), 'password999')
     await user.click(screen.getByRole('button', { name: 'Create account' }))
 
     expect(await screen.findByText('Passwords must match')).toBeTruthy()
+  })
+
+  it('requires student number and phone number during registration', async () => {
+    const user = userEvent.setup()
+
+    await renderRoute({
+      route: '/auth?mode=register',
+      authComponent: AuthView,
+    })
+
+    await user.type(getInput('register-username'), 'alice')
+    await user.type(getInput('register-email'), 'alice@example.com')
+    await user.type(getInput('register-password'), 'password123')
+    await user.type(getInput('register-confirm-password'), 'password123')
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+
+    expect(await screen.findByText('Student number is required')).toBeTruthy()
+    expect(await screen.findByText('Phone number is required')).toBeTruthy()
+  })
+
+  it('submits staff registration without student number or phone number', async () => {
+    let capturedPayload: Record<string, unknown> | null = null
+
+    server.use(
+      http.post('http://localhost:8080/api/auth/register', async ({ request }) => {
+        capturedPayload = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ token: 'jwt-token' })
+      }),
+      http.get('http://localhost:8080/api/users/me', () =>
+        HttpResponse.json({
+          ...sampleUser,
+          id: 2,
+          username: 'staff',
+          email: 'staff@example.com',
+          userType: 'STAFF',
+          studentNumber: null,
+          phoneNumber: null,
+        }),
+      ),
+    )
+
+    const user = userEvent.setup()
+
+    await renderRoute({
+      route: '/auth?mode=register',
+      authComponent: AuthView,
+    })
+
+    await user.click(screen.getByRole('combobox', { name: 'User type' }))
+    await user.click(await screen.findByRole('option', { name: 'Staff' }))
+
+    expect(screen.queryByLabelText('Student number')).toBeNull()
+    expect(screen.queryByLabelText('Phone number')).toBeNull()
+
+    await user.type(getInput('register-username'), 'staff')
+    await user.type(getInput('register-email'), 'staff@example.com')
+    await user.type(getInput('register-password'), 'password123')
+    await user.type(getInput('register-confirm-password'), 'password123')
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+
+    await waitFor(() => {
+      expect(capturedPayload).toMatchObject({
+        username: 'staff',
+        email: 'staff@example.com',
+        userType: 'STAFF',
+        studentNumber: null,
+        phoneNumber: null,
+      })
+    })
   })
 
   it('shows a helpful error on invalid login', async () => {
@@ -98,9 +169,7 @@ describe('AuthView', () => {
       authComponent: AuthView,
     })
 
-    expect(
-      screen.getByText("You'll return to your selected page after signing in."),
-    ).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Login or create an account' })).toBeTruthy()
 
     await user.type(getInput('login-email'), 'alice@example.com')
     await user.type(getInput('login-password'), 'password123')
@@ -108,42 +177,6 @@ describe('AuthView', () => {
 
     await waitFor(() => {
       expect(router.currentRoute.value.fullPath).toBe('/activities/7')
-    })
-  })
-
-  it('submits the admin flag during registration', async () => {
-    let capturedPayload: Record<string, unknown> | null = null
-
-    server.use(
-      http.post('http://localhost:8080/api/auth/register', async ({ request }) => {
-        capturedPayload = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json({ token: 'jwt-token' })
-      }),
-      http.get('http://localhost:8080/api/users/me', () =>
-        HttpResponse.json({ ...sampleUser, role: 'ADMIN' }),
-      ),
-    )
-
-    const user = userEvent.setup()
-
-    await renderRoute({
-      route: '/auth?mode=register',
-      authComponent: AuthView,
-    })
-
-    await user.type(getInput('register-username'), 'admin')
-    await user.type(getInput('register-email'), 'admin@example.com')
-    await user.type(getInput('register-password'), 'password123')
-    await user.type(getInput('register-confirm-password'), 'password123')
-    await user.click(getInput('register-is-admin'))
-    await user.click(screen.getByRole('button', { name: 'Create account' }))
-
-    await waitFor(() => {
-      expect(capturedPayload).toMatchObject({
-        username: 'admin',
-        email: 'admin@example.com',
-        isAdmin: true,
-      })
     })
   })
 
@@ -163,6 +196,8 @@ describe('AuthView', () => {
 
     await user.type(getInput('register-username'), 'alice')
     await user.type(getInput('register-email'), 'alice@example.com')
+    await user.type(getInput('register-student-number'), 'S1234567')
+    await user.type(getInput('register-phone-number'), '+3531234567')
     await user.type(getInput('register-password'), 'password123')
     await user.type(getInput('register-confirm-password'), 'password123')
     await user.click(screen.getByRole('button', { name: 'Create account' }))

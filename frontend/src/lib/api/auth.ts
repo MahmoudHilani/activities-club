@@ -1,3 +1,4 @@
+import type { UserType } from '@/lib/api/types'
 import { apiClient } from '@/lib/api/client'
 import type { AuthResponse, UserResponse } from '@/lib/api/types'
 
@@ -9,8 +10,10 @@ export interface LoginPayload {
 export interface RegisterPayload {
   username: string
   email: string
+  userType: UserType
+  studentNumber: string | null
+  phoneNumber: string | null
   password: string
-  isAdmin: boolean
 }
 
 export async function login(payload: LoginPayload): Promise<AuthResponse> {

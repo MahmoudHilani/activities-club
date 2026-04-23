@@ -2,14 +2,17 @@ package com.activitiesclub.activitiesclub_backend.dto;
 
 import java.time.Instant;
 
-import com.activitiesclub.activitiesclub_backend.Role;
 import com.activitiesclub.activitiesclub_backend.User;
+import com.activitiesclub.activitiesclub_backend.UserType;
 
 public record UserResponse(
     Long id,
     String username,
     String email,
-    Role role,
+    String studentNumber,
+    String phoneNumber,
+    UserType userType,
+    boolean isAdmin,
     Instant createdAt,
     Instant updatedAt
 ) {
@@ -18,7 +21,10 @@ public record UserResponse(
             user.getId(),
             user.getUsername(),
             user.getEmail(),
-            user.getRole(),
+            user.getStudentNumber(),
+            user.getPhoneNumber(),
+            user.getUserType(),
+            user.isAdmin(),
             user.getCreatedAt(),
             user.getUpdatedAt()
         );

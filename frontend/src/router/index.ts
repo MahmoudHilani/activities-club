@@ -71,6 +71,15 @@ const router = createRouter({
         requiresAdmin: true,
       },
     },
+    {
+      path: '/admin/users',
+      name: 'admin-users',
+      component: () => import('@/views/AdminUsersView.vue'),
+      meta: {
+        title: 'User management',
+        requiresAdmin: true,
+      },
+    },
   ],
 })
 
@@ -90,7 +99,7 @@ router.beforeEach(async (to) => {
       return { name: 'auth', query: { mode: 'login' } }
     }
 
-    if (sessionStore.user?.role !== 'ADMIN') {
+    if (!sessionStore.user?.isAdmin) {
       return { name: 'activities' }
     }
   }

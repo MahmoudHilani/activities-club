@@ -44,6 +44,16 @@ public class User {
 
     @Getter
     @Setter
+    @Column(length = 30, name = "student_number")
+    private String studentNumber;
+
+    @Getter
+    @Setter
+    @Column(length = 30, name = "phone_number")
+    private String phoneNumber;
+
+    @Getter
+    @Setter
     @JsonIgnore
     @Column(nullable = false, length = 255, name = "password_hash")
     private String passwordHash;
@@ -61,8 +71,13 @@ public class User {
     @Getter
     @Setter
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private Role role;
+    @Column(nullable = false, length = 20, name = "user_type")
+    private UserType userType;
+
+    @Getter
+    @Setter
+    @Column(nullable = false, name = "is_admin")
+    private boolean isAdmin;
 
     @PrePersist
     @PreUpdate
@@ -72,6 +87,12 @@ public class User {
         }
         if (email != null) {
             email = email.trim().toLowerCase(Locale.ROOT);
+        }
+        if (studentNumber != null) {
+            studentNumber = studentNumber.trim();
+        }
+        if (phoneNumber != null) {
+            phoneNumber = phoneNumber.trim();
         }
     }
 }

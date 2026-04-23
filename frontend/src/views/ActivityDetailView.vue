@@ -38,12 +38,12 @@ function parseActivityId(value: unknown): number | null {
 
 const activityId = computed(() => parseActivityId(route.params.activityId))
 const detailPath = computed(() => route.fullPath)
-const isAdmin = computed(() => sessionStore.user?.role === 'ADMIN')
+const isAdmin = computed(() => sessionStore.user?.isAdmin === true)
 const detailQueryKey = computed(() => [
   'activity-detail',
   activityId.value,
   sessionStore.user?.id ?? 'anonymous',
-  sessionStore.user?.role ?? 'anonymous',
+  sessionStore.user?.isAdmin ? 'admin' : 'member',
 ] as const)
 
 const activityQuery = useQuery(() => ({

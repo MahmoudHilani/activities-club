@@ -2,13 +2,17 @@ export interface AuthResponse {
   token: string
 }
 
+export type UserType = 'STUDENT' | 'STAFF'
 export type ReservationStatus = 'RESERVED' | 'WAITLISTED' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW'
 
 export interface UserResponse {
   id: number
   username: string
   email: string
-  role: 'ADMIN' | 'STUDENT'
+  studentNumber: string | null
+  phoneNumber: string | null
+  userType: UserType
+  isAdmin: boolean
   createdAt: string
   updatedAt: string
 }

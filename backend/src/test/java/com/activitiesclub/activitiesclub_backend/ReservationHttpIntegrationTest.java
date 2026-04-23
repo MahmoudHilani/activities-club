@@ -41,8 +41,8 @@ class ReservationHttpIntegrationTest {
 
     @Test
     void authenticatedStudentCanReserveOverRealHttp() throws Exception {
-        User admin = createUser("admin", "admin@example.com", Role.ADMIN);
-        User student = createUser("alice", "alice@example.com", Role.STUDENT);
+        User admin = createUser("admin", "admin@example.com", UserType.STAFF, true);
+        User student = createUser("alice", "alice@example.com", UserType.STUDENT, false);
 
         Activity activity = new Activity();
         activity.setTitle("Workshop");
@@ -83,12 +83,15 @@ class ReservationHttpIntegrationTest {
         assertThat(root.path("status").asText()).isEqualTo("RESERVED");
     }
 
-    private User createUser(String username, String email, Role role) {
+    private User createUser(String username, String email, UserType userType, boolean isAdmin) {
         User user = new User();
         user.setUsername(username);
         user.setEmail(email);
+        user.setUserType(userType);
+        user.setAdmin(isAdmin);
+        user.setStudentNumber(userType == UserType.STUDENT ? "student-" + username : null);
+        user.setPhoneNumber(userType == UserType.STUDENT ? "phone-" + username : null);
         user.setPasswordHash(passwordEncoder.encode("password123"));
-        user.setRole(role);
         return userRepository.save(user);
     }
 

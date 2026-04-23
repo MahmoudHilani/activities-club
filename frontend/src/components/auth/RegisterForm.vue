@@ -1,17 +1,23 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { Check, LoaderCircle } from 'lucide-vue-next'
+import { LoaderCircle } from 'lucide-vue-next'
 import { useForm } from 'vee-validate'
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { z } from 'zod'
 
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { mapRegisterError } from '@/lib/api/errors'
 import { resolveRedirectPath } from '@/lib/redirect'
 import { useSessionStore } from '@/stores/session'
+
+const userTypeOptions = [
+  { label: 'Student', value: 'STUDENT' },
+  { label: 'Staff', value: 'STAFF' },
+] as const
 
 const route = useRoute()
 const router = useRouter()
@@ -24,39 +30,88 @@ const registerSchema = toTypedSchema(
       username: z
         .string()
         .trim()
-        .min(1, 'Username is required')
-        .max(30, 'Username must be 30 characters or less'),
+        .min(1, 'Name and surname is required')
+        .max(30, 'Name and surname must be 30 characters or less'),
       email: z
         .string()
         .trim()
         .min(1, 'Email is required')
         .max(120, 'Email must be 120 characters or less')
         .email('Enter a valid email address'),
+      userType: z.enum(['STUDENT', 'STAFF'], {
+        message: 'Choose whether you are registering as a student or staff member',
+      }),
+      studentNumber: z
+        .string()
+        .trim()
+        .max(30, 'Student number must be 30 characters or less'),
+      phoneNumber: z
+        .string()
+        .trim()
+        .max(30, 'Phone number must be 30 characters or less'),
       password: z
         .string()
         .min(8, 'Password must be at least 8 characters')
         .max(72, 'Password must be 72 characters or less'),
       confirmPassword: z.string().min(1, 'Confirm your password'),
-      isAdmin: z.boolean(),
     })
-    .refine((values) => values.password === values.confirmPassword, {
-      path: ['confirmPassword'],
-      message: 'Passwords must match',
+    .superRefine((values, context) => {
+      if (values.password !== values.confirmPassword) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['confirmPassword'],
+          message: 'Passwords must match',
+        })
+      }
+
+      if (values.userType === 'STUDENT') {
+        if (!values.studentNumber.trim()) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['studentNumber'],
+            message: 'Student number is required',
+          })
+        }
+
+        if (!values.phoneNumber.trim()) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['phoneNumber'],
+            message: 'Phone number is required',
+          })
+        }
+      }
     }),
 )
 
 const { defineField, errors, handleSubmit, isSubmitting } = useForm({
   validationSchema: registerSchema,
   initialValues: {
-    isAdmin: false,
+    username: '',
+    email: '',
+    userType: 'STUDENT',
+    studentNumber: '',
+    phoneNumber: '',
+    password: '',
+    confirmPassword: '',
   },
 })
 
 const [username, usernameAttrs] = defineField('username')
 const [email, emailAttrs] = defineField('email')
+const [userType] = defineField('userType')
+const [studentNumber, studentNumberAttrs] = defineField('studentNumber')
+const [phoneNumber, phoneNumberAttrs] = defineField('phoneNumber')
 const [password, passwordAttrs] = defineField('password')
 const [confirmPassword, confirmPasswordAttrs] = defineField('confirmPassword')
-const [isAdmin, isAdminAttrs] = defineField('isAdmin')
+const isStudent = computed(() => userType.value === 'STUDENT')
+
+watch(userType, (value) => {
+  if (value === 'STAFF') {
+    studentNumber.value = ''
+    phoneNumber.value = ''
+  }
+})
 
 const onSubmit = handleSubmit(async (values) => {
   serverError.value = ''
@@ -65,8 +120,10 @@ const onSubmit = handleSubmit(async (values) => {
     await sessionStore.register({
       username: values.username,
       email: values.email,
+      userType: values.userType,
+      studentNumber: values.userType === 'STUDENT' ? values.studentNumber.trim() : null,
+      phoneNumber: values.userType === 'STUDENT' ? values.phoneNumber.trim() : null,
       password: values.password,
-      isAdmin: values.isAdmin,
     })
     await router.push(resolveRedirectPath(route.query.redirect))
   } catch (error) {
@@ -82,13 +139,28 @@ const onSubmit = handleSubmit(async (values) => {
     </Alert>
 
     <div class="space-y-2.5">
-      <label class="text-sm font-semibold text-foreground" for="register-username">Username</label>
+      <label class="text-sm font-semibold text-foreground" for="register-user-type">User type</label>
+      <Select v-model="userType">
+        <SelectTrigger id="register-user-type" aria-label="User type">
+          <SelectValue placeholder="Select your user type" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem v-for="option in userTypeOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
+      <p v-if="errors.userType" class="text-sm text-destructive">{{ errors.userType }}</p>
+    </div>
+
+    <div class="space-y-2.5">
+      <label class="text-sm font-semibold text-foreground" for="register-username">Name and surname</label>
       <Input
         id="register-username"
         v-model="username"
         v-bind="usernameAttrs"
         autocomplete="username"
-        placeholder="Pick a display name"
+        placeholder="Enter your name and surname"
       />
       <p v-if="errors.username" class="text-sm text-destructive">{{ errors.username }}</p>
     </div>
@@ -104,6 +176,37 @@ const onSubmit = handleSubmit(async (values) => {
         type="email"
       />
       <p v-if="errors.email" class="text-sm text-destructive">{{ errors.email }}</p>
+    </div>
+
+    <div v-if="isStudent" class="space-y-2.5">
+      <label class="text-sm font-semibold text-foreground" for="register-student-number">
+        Student number
+      </label>
+      <Input
+        id="register-student-number"
+        v-model="studentNumber"
+        v-bind="studentNumberAttrs"
+        autocomplete="off"
+        placeholder="Enter your student number"
+      />
+      <p v-if="errors.studentNumber" class="text-sm text-destructive">
+        {{ errors.studentNumber }}
+      </p>
+    </div>
+
+    <div v-if="isStudent" class="space-y-2.5">
+      <label class="text-sm font-semibold text-foreground" for="register-phone-number">
+        Phone number
+      </label>
+      <Input
+        id="register-phone-number"
+        v-model="phoneNumber"
+        v-bind="phoneNumberAttrs"
+        autocomplete="tel"
+        placeholder="Enter your phone number"
+        type="tel"
+      />
+      <p v-if="errors.phoneNumber" class="text-sm text-destructive">{{ errors.phoneNumber }}</p>
     </div>
 
     <div class="space-y-2.5">
@@ -136,27 +239,6 @@ const onSubmit = handleSubmit(async (values) => {
         {{ errors.confirmPassword }}
       </p>
     </div>
-
-    <label class="auth-checkbox" for="register-is-admin">
-      <input
-        id="register-is-admin"
-        v-model="isAdmin"
-        v-bind="isAdminAttrs"
-        class="peer sr-only"
-        type="checkbox"
-      />
-      <span
-        class="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border bg-white text-primary-foreground transition-all peer-checked:border-primary peer-checked:bg-primary peer-focus-visible:ring-4 peer-focus-visible:ring-ring"
-      >
-        <Check class="h-3.5 w-3.5 opacity-0 transition peer-checked:opacity-100" />
-      </span>
-      <span class="min-w-0">
-        <span class="block text-sm font-semibold text-foreground">Register as admin</span>
-        <span class="block text-xs text-muted-foreground">
-          Enable management access for this account.
-        </span>
-      </span>
-    </label>
 
     <Button class="mt-1 w-full" :disabled="isSubmitting" size="lg" type="submit">
       <LoaderCircle v-if="isSubmitting" class="h-4 w-4 animate-spin" />

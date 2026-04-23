@@ -39,7 +39,6 @@ public class JwtService {
     public String generate(User user) {
         return Jwts.builder()
             .subject(user.getId().toString())
-            .claim("role", user.getRole().name())
             .issuedAt(new Date())
             .expiration(new Date(System.currentTimeMillis() + expMs))
             .signWith(signingKey)
