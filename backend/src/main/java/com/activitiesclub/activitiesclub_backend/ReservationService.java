@@ -1,6 +1,8 @@
 package com.activitiesclub.activitiesclub_backend;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,8 @@ public class ReservationService {
         Activity activity = activityService.getReservableActivity(activityId);
         User user = userRepository.findById(currentUser.id())
             .orElseThrow(() -> new IllegalStateException("Authenticated user no longer exists"));
+
+        assertEligibleForOvernightActivity(activity, user);
 
         ActivityReservation reservation = reservationRepository.findByActivityIdAndUserId(activityId, currentUser.id())
             .orElseGet(ActivityReservation::new);
@@ -114,6 +118,23 @@ public class ReservationService {
     private void assertReservableMember(AuthenticatedUser currentUser) {
         if (currentUser.isAdmin()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admins cannot reserve activities");
+        }
+    }
+
+    private void assertEligibleForOvernightActivity(Activity activity, User user) {
+        if (!activity.isOvernight() || user.getUserType() != UserType.STUDENT) {
+            return;
+        }
+        if (activity.getStartAt() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Overnight activities require a start date before reservations can be made");
+        }
+        if (user.getDateOfBirth() == null) {
+            return;
+        }
+
+        LocalDate activityStartDate = activity.getStartAt().atZone(ZoneOffset.UTC).toLocalDate();
+        if (user.getDateOfBirth().plusYears(18).isAfter(activityStartDate)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Students must be 18 or older on the activity start date to reserve overnight activities");
         }
     }
 }

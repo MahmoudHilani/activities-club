@@ -1,18 +1,24 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { Shield, ShieldOff, UserRoundX, UserRoundCheck } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { getApiMessage, mapUsersError } from '@/lib/api/errors'
-import { getAdminUsers, updateAdminUserAccess, updateUserApprovalStatus } from '@/lib/api/users'
+import {
+  getAdminUsers,
+  updateAdminUserAccess,
+  updateUserApprovalStatus,
+  updateUserDateOfBirth,
+} from '@/lib/api/users'
 import type { ApprovalStatus, UserResponse } from '@/lib/api/types'
 import { useSessionStore } from '@/stores/session'
 
 const queryClient = useQueryClient()
 const sessionStore = useSessionStore()
 const actionError = ref('')
+const dateOfBirthByUserId = ref<Record<number, string>>({})
 
 const usersQuery = useQuery(() => ({
   queryKey: ['admin-users'],
@@ -30,6 +36,18 @@ const users = computed(() =>
 
     return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
   }),
+)
+
+watch(
+  () => usersQuery.data.value,
+  (currentUsers) => {
+    for (const user of currentUsers ?? []) {
+      if (user.userType === 'STUDENT' && dateOfBirthByUserId.value[user.id] === undefined) {
+        dateOfBirthByUserId.value[user.id] = user.dateOfBirth ?? ''
+      }
+    }
+  },
+  { immediate: true },
 )
 
 function replaceCachedUser(updatedUser: UserResponse): void {
@@ -55,10 +73,12 @@ const approvalMutation = useMutation(() => ({
   mutationFn: ({
     userId,
     approvalStatus,
+    dateOfBirth,
   }: {
     userId: number
     approvalStatus: Exclude<ApprovalStatus, 'PENDING'>
-  }) => updateUserApprovalStatus(userId, approvalStatus),
+    dateOfBirth?: string | null
+  }) => updateUserApprovalStatus(userId, approvalStatus, dateOfBirth),
   onSuccess: async (updatedUser) => {
     actionError.value = ''
     replaceCachedUser(updatedUser)
@@ -66,6 +86,20 @@ const approvalMutation = useMutation(() => ({
   },
   onError: (error) => {
     actionError.value = getApiMessage(error) ?? 'We could not update registration approval right now.'
+  },
+}))
+
+const dateOfBirthMutation = useMutation(() => ({
+  mutationFn: ({ userId, dateOfBirth }: { userId: number; dateOfBirth: string | null }) =>
+    updateUserDateOfBirth(userId, dateOfBirth),
+  onSuccess: async (updatedUser) => {
+    actionError.value = ''
+    dateOfBirthByUserId.value[updatedUser.id] = updatedUser.dateOfBirth ?? ''
+    replaceCachedUser(updatedUser)
+    await queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+  },
+  onError: (error) => {
+    actionError.value = getApiMessage(error) ?? 'We could not update the date of birth right now.'
   },
 }))
 
@@ -84,14 +118,32 @@ function updateApprovalStatus(
   user: UserResponse,
   approvalStatus: Exclude<ApprovalStatus, 'PENDING'>,
 ): void {
+  const dateOfBirth =
+    approvalStatus === 'APPROVED' && user.userType === 'STUDENT'
+      ? (dateOfBirthByUserId.value[user.id] ?? '').trim() || null
+      : null
+
   approvalMutation.mutate({
     userId: user.id,
     approvalStatus,
+    dateOfBirth,
   })
 }
 
 function contactValue(value: string | null): string {
   return value ?? 'Not provided'
+}
+
+function canApprove(user: UserResponse): boolean {
+  return !approvalMutation.isPending.value
+}
+
+function saveDateOfBirth(user: UserResponse): void {
+  const dateOfBirth = (dateOfBirthByUserId.value[user.id] ?? '').trim() || null
+  dateOfBirthMutation.mutate({
+    userId: user.id,
+    dateOfBirth,
+  })
 }
 </script>
 
@@ -153,13 +205,38 @@ function contactValue(value: string | null): string {
                 <span class="font-semibold text-foreground">Phone number:</span>
                 {{ contactValue(user.phoneNumber) }}
               </p>
+              <p v-if="user.userType !== 'STUDENT'">
+                <span class="font-semibold text-foreground">Date of birth:</span>
+                {{ contactValue(user.dateOfBirth) }}
+              </p>
             </div>
           </div>
 
           <div class="flex w-full flex-col gap-2 xl:min-w-[14rem] xl:max-w-[14rem]">
+            <label v-if="user.userType === 'STUDENT'" class="space-y-2">
+              <span class="text-sm font-semibold text-foreground">Date of birth</span>
+              <input
+                v-model="dateOfBirthByUserId[user.id]"
+                :aria-label="`Date of birth for ${user.username}`"
+                class="w-full rounded-2xl border border-border bg-white/70 px-4 py-2 text-sm"
+                type="date"
+              />
+            </label>
+            <Button
+              v-if="user.userType === 'STUDENT' && user.approvalStatus !== 'PENDING'"
+              :aria-label="`Save date of birth for ${user.username}`"
+              :disabled="dateOfBirthMutation.isPending.value"
+              class="w-full justify-center"
+              size="sm"
+              variant="outline"
+              @click="saveDateOfBirth(user)"
+            >
+              Save DOB
+            </Button>
+
             <template v-if="user.approvalStatus === 'PENDING'">
               <Button
-                :disabled="approvalMutation.isPending.value"
+                :disabled="!canApprove(user)"
                 class="w-full justify-center"
                 size="sm"
                 @click="updateApprovalStatus(user, 'APPROVED')"

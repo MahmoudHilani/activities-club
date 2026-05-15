@@ -25,6 +25,7 @@ export interface ActivityUpsertPayload {
   locationAddress: string | null
   capacity: number | null
   ticketPrice: number
+  isOvernight: boolean
   visibility: 'PUBLIC' | 'PRIVATE'
   reservationOpensAt: string | null
   reservationClosesAt: string | null

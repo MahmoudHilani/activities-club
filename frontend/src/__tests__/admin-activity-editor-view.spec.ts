@@ -15,6 +15,7 @@ describe('AdminActivityEditorView', () => {
       title: 'Members Night',
       status: 'DRAFT',
       visibility: 'PRIVATE',
+      isOvernight: true,
     })
     let createRequestCount = 0
 
@@ -43,6 +44,7 @@ describe('AdminActivityEditorView', () => {
     await user.click(screen.getByRole('combobox', { name: 'Visibility' }))
     await user.click(await screen.findByRole('option', { name: 'Private' }))
     expect(screen.getByRole('combobox', { name: 'Visibility' }).textContent).toContain('Private')
+    await user.click(screen.getByLabelText('Overnight activity'))
 
     const submitButton = screen.getByRole('button', { name: 'Create activity draft' })
     const form = submitButton.closest('form')
@@ -57,5 +59,6 @@ describe('AdminActivityEditorView', () => {
 
     expect(await screen.findByRole('heading', { name: 'Members Night' })).toBeTruthy()
     expect(screen.getByRole('combobox', { name: 'Visibility' }).textContent).toContain('Private')
+    expect((screen.getByLabelText('Overnight activity') as HTMLInputElement).checked).toBe(true)
   })
 })

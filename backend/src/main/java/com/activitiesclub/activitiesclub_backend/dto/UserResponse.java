@@ -1,6 +1,7 @@
 package com.activitiesclub.activitiesclub_backend.dto;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 import com.activitiesclub.activitiesclub_backend.ApprovalStatus;
 import com.activitiesclub.activitiesclub_backend.User;
@@ -12,6 +13,7 @@ public record UserResponse(
     String email,
     String studentNumber,
     String phoneNumber,
+    LocalDate dateOfBirth,
     UserType userType,
     ApprovalStatus approvalStatus,
     boolean isAdmin,
@@ -25,6 +27,7 @@ public record UserResponse(
             user.getEmail(),
             user.getStudentNumber(),
             user.getPhoneNumber(),
+            user.getDateOfBirth(),
             user.getUserType(),
             user.getApprovalStatus(),
             user.isAdmin(),

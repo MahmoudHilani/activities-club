@@ -1,6 +1,7 @@
 package com.activitiesclub.activitiesclub_backend;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Locale;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -51,6 +52,11 @@ public class User {
     @Setter
     @Column(length = 30, name = "phone_number")
     private String phoneNumber;
+
+    @Getter
+    @Setter
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
 
     @Getter
     @Setter

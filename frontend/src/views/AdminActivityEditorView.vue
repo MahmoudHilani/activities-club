@@ -33,6 +33,7 @@ interface ActivityFormState {
   locationAddress: string
   capacity: string
   ticketPrice: string
+  isOvernight: boolean
   visibility: 'PUBLIC' | 'PRIVATE'
   reservationOpensAt: string
   reservationClosesAt: string
@@ -55,6 +56,7 @@ const form = reactive<ActivityFormState>({
   locationAddress: '',
   capacity: '',
   ticketPrice: '0',
+  isOvernight: false,
   visibility: 'PUBLIC',
   reservationOpensAt: '',
   reservationClosesAt: '',
@@ -168,6 +170,7 @@ function resetForm(activity?: ActivityResponse | null): void {
   form.locationAddress = activity?.locationAddress ?? ''
   form.capacity = activity?.capacity ? String(activity.capacity) : ''
   form.ticketPrice = activity?.ticketPrice ?? '0'
+  form.isOvernight = activity?.isOvernight ?? false
   form.visibility = activity?.visibility ?? 'PUBLIC'
   form.reservationOpensAt = toDateTimeInput(activity?.reservationOpensAt)
   form.reservationClosesAt = toDateTimeInput(activity?.reservationClosesAt)
@@ -213,6 +216,7 @@ function toPayload(): ActivityUpsertPayload {
     locationAddress: nullableText(form.locationAddress),
     capacity: form.capacity ? Number(form.capacity) : null,
     ticketPrice: Number(form.ticketPrice || '0'),
+    isOvernight: form.isOvernight,
     visibility: form.visibility,
     reservationOpensAt: toIsoString(form.reservationOpensAt),
     reservationClosesAt: toIsoString(form.reservationClosesAt),
@@ -330,6 +334,12 @@ onBeforeUnmount(() => {
               >
                 {{ form.visibility }}
               </span>
+              <span
+                v-if="form.isOvernight"
+                class="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+              >
+                Overnight
+              </span>
             </div>
 
             <div
@@ -441,6 +451,17 @@ onBeforeUnmount(() => {
             <DateTimeField v-model="form.endAt" placeholder="Select the activity end" />
           </label>
         </div>
+
+        <label
+          class="flex items-center gap-3 rounded-2xl border border-border bg-white/70 px-4 py-3 text-sm font-semibold text-foreground"
+        >
+          <input
+            v-model="form.isOvernight"
+            class="h-4 w-4 rounded border-border text-primary"
+            type="checkbox"
+          />
+          Overnight activity
+        </label>
 
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="space-y-2">

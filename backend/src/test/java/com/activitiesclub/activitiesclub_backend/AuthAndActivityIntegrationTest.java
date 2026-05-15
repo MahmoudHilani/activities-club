@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -214,7 +215,8 @@ class AuthAndActivityIntegrationTest {
                     """)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.approvalStatus").value("APPROVED"));
+            .andExpect(jsonPath("$.approvalStatus").value("APPROVED"))
+            .andExpect(jsonPath("$.dateOfBirth").value(org.hamcrest.Matchers.nullValue()));
 
         mockMvc.perform(patch("/api/admin/users/{userId}/approval", pendingUser.getId())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -225,6 +227,61 @@ class AuthAndActivityIntegrationTest {
                     """)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
             .andExpect(status().isConflict());
+    }
+
+    @Test
+    void adminCanApprovePendingStaffWithoutDateOfBirth() throws Exception {
+        String adminToken = createAdminToken();
+        registerStaff("pending-staff", "pending-staff@example.com", "password123");
+        User pendingStaff = userRepository.findByEmailIgnoreCase("pending-staff@example.com")
+            .orElseThrow(() -> new IllegalStateException("Expected pending staff user"));
+
+        mockMvc.perform(patch("/api/admin/users/{userId}/approval", pendingStaff.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "approvalStatus": "APPROVED"
+                    }
+                    """)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.approvalStatus").value("APPROVED"))
+            .andExpect(jsonPath("$.dateOfBirth").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    void adminCanUpdateApprovedStudentDateOfBirthFromUserManagement() throws Exception {
+        String adminToken = createAdminToken();
+        User student = createUser("dob-student", "dob-student@example.com", UserType.STUDENT, false);
+        student.setDateOfBirth(null);
+        userRepository.save(student);
+
+        mockMvc.perform(patch("/api/admin/users/{userId}/date-of-birth", student.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "dateOfBirth": "2001-04-05"
+                    }
+                    """)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.dateOfBirth").value("2001-04-05"));
+    }
+
+    @Test
+    void adminCannotSetFutureStudentDateOfBirth() throws Exception {
+        String adminToken = createAdminToken();
+        User student = createUser("future-dob", "future-dob@example.com", UserType.STUDENT, false);
+
+        mockMvc.perform(patch("/api/admin/users/{userId}/date-of-birth", student.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "dateOfBirth": "2999-01-01"
+                    }
+                    """)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken))
+            .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -671,6 +728,9 @@ class AuthAndActivityIntegrationTest {
     private void approveUser(String email) {
         User user = userRepository.findByEmailIgnoreCase(email)
             .orElseThrow(() -> new IllegalStateException("Expected user for approval"));
+        if (user.getUserType() == UserType.STUDENT) {
+            user.setDateOfBirth(LocalDate.of(2000, 1, 1));
+        }
         user.setApprovalStatus(ApprovalStatus.APPROVED);
         userRepository.save(user);
     }
@@ -707,6 +767,7 @@ class AuthAndActivityIntegrationTest {
         user.setApprovalStatus(ApprovalStatus.APPROVED);
         user.setStudentNumber(userType == UserType.STUDENT ? "student-" + username : null);
         user.setPhoneNumber(userType == UserType.STUDENT ? "phone-" + username : null);
+        user.setDateOfBirth(userType == UserType.STUDENT ? LocalDate.of(2000, 1, 1) : null);
         user.setPasswordHash(passwordEncoder.encode("password123"));
         return userRepository.save(user);
     }
@@ -741,6 +802,7 @@ class AuthAndActivityIntegrationTest {
         payload.put("locationAddress", "Main Campus");
         payload.put("capacity", capacity);
         payload.put("ticketPrice", new BigDecimal(ticketPrice));
+        payload.put("isOvernight", false);
         payload.put("visibility", visibility);
         payload.put("reservationOpensAt", "2026-01-10T18:00:00Z");
         payload.put("reservationClosesAt", "2030-03-20T17:00:00Z");

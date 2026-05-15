@@ -101,6 +101,7 @@ describe('AdminUsersView', () => {
       id: 2,
       username: 'pending-member',
       email: 'pending@example.com',
+      dateOfBirth: null,
       approvalStatus: 'PENDING' as const,
       isAdmin: false,
     }
@@ -123,10 +124,15 @@ describe('AdminUsersView', () => {
         ]),
       ),
       http.patch('http://localhost:8080/api/admin/users/2/approval', async ({ request }) => {
-        const body = (await request.json()) as { approvalStatus: 'APPROVED' | 'DENIED' }
+        const body = (await request.json()) as {
+          approvalStatus: 'APPROVED' | 'DENIED'
+          dateOfBirth?: string
+        }
+        expect(body.dateOfBirth).toBeNull()
         pendingUser = {
           ...pendingUser,
           approvalStatus: body.approvalStatus,
+          dateOfBirth: body.dateOfBirth ?? null,
         }
         return HttpResponse.json(pendingUser)
       }),
@@ -154,7 +160,6 @@ describe('AdminUsersView', () => {
     }
 
     expect(await screen.findByRole('button', { name: 'Approve' })).toBeTruthy()
-
     await user.click(screen.getByRole('button', { name: 'Approve' }))
 
     await waitFor(() => {
@@ -164,6 +169,97 @@ describe('AdminUsersView', () => {
       }
 
       expect(within(pendingUserCard).getByRole('button', { name: 'Grant admin' })).toBeTruthy()
+    })
+  })
+
+  it('updates a student date of birth from user management', async () => {
+    let managedStudent = {
+      ...sampleUser,
+      id: 2,
+      username: 'student-member',
+      email: 'student@example.com',
+      dateOfBirth: null,
+      approvalStatus: 'APPROVED' as const,
+      isAdmin: false,
+    }
+
+    server.use(
+      http.get('http://localhost:8080/api/admin/users', () => HttpResponse.json([managedStudent])),
+      http.patch('http://localhost:8080/api/admin/users/2/date-of-birth', async ({ request }) => {
+        const body = (await request.json()) as { dateOfBirth: string | null }
+        expect(body.dateOfBirth).toBe('2001-04-05')
+        managedStudent = {
+          ...managedStudent,
+          dateOfBirth: body.dateOfBirth,
+        }
+        return HttpResponse.json(managedStudent)
+      }),
+    )
+
+    const user = userEvent.setup()
+    await renderRoute({
+      route: '/admin/users',
+      adminUsersComponent: AdminUsersView,
+    })
+
+    expect(await screen.findByText('student-member')).toBeTruthy()
+
+    await user.type(screen.getByLabelText('Date of birth for student-member'), '2001-04-05')
+    await user.click(screen.getByRole('button', { name: 'Save date of birth for student-member' }))
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('2001-04-05')).toBeTruthy()
+    })
+  })
+
+  it('approves pending staff without a date of birth', async () => {
+    let pendingStaff = {
+      ...sampleUser,
+      id: 2,
+      username: 'pending-staff',
+      email: 'pending-staff@example.com',
+      userType: 'STAFF' as const,
+      studentNumber: null,
+      phoneNumber: null,
+      dateOfBirth: null,
+      approvalStatus: 'PENDING' as const,
+      isAdmin: false,
+    }
+
+    server.use(
+      http.get('http://localhost:8080/api/admin/users', () => HttpResponse.json([pendingStaff])),
+      http.patch('http://localhost:8080/api/admin/users/2/approval', async ({ request }) => {
+        const body = (await request.json()) as {
+          approvalStatus: 'APPROVED' | 'DENIED'
+          dateOfBirth?: string | null
+        }
+        expect(body.dateOfBirth).toBeNull()
+        pendingStaff = {
+          ...pendingStaff,
+          approvalStatus: body.approvalStatus,
+        }
+        return HttpResponse.json(pendingStaff)
+      }),
+    )
+
+    const user = userEvent.setup()
+    await renderRoute({
+      route: '/admin/users',
+      adminUsersComponent: AdminUsersView,
+    })
+
+    expect(await screen.findByRole('button', { name: 'Approve' })).toBeTruthy()
+    expect(screen.queryByLabelText('Date of birth')).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Approve' }))
+
+    await waitFor(() => {
+      const pendingStaffCard = screen.getByText('pending-staff').closest('article')
+      if (!pendingStaffCard) {
+        throw new Error('Expected the pending staff card to exist.')
+      }
+
+      expect(within(pendingStaffCard).getByRole('button', { name: 'Grant admin' })).toBeTruthy()
     })
   })
 

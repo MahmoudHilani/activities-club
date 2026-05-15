@@ -17,6 +17,7 @@ export interface UserResponse {
   email: string
   studentNumber: string | null
   phoneNumber: string | null
+  dateOfBirth: string | null
   userType: UserType
   approvalStatus: ApprovalStatus
   isAdmin: boolean
@@ -41,6 +42,7 @@ export interface ActivityResponse {
   capacity: number | null
   imageUrl: string
   ticketPrice: string
+  isOvernight: boolean
   status: 'DRAFT' | 'PUBLISHED' | 'CANCELLED' | 'COMPLETED'
   visibility: 'PUBLIC' | 'PRIVATE'
   reservationOpensAt: string | null

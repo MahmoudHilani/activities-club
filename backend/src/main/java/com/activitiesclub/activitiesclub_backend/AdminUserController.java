@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.activitiesclub.activitiesclub_backend.auth.AuthenticatedUser;
 import com.activitiesclub.activitiesclub_backend.dto.UpdateUserApprovalStatusRequest;
 import com.activitiesclub.activitiesclub_backend.dto.UpdateUserAdminRequest;
+import com.activitiesclub.activitiesclub_backend.dto.UpdateUserDateOfBirthRequest;
 import com.activitiesclub.activitiesclub_backend.dto.UserResponse;
 
 import jakarta.validation.Valid;
@@ -36,7 +37,7 @@ public class AdminUserController {
         @PathVariable Long userId,
         @Valid @RequestBody UpdateUserApprovalStatusRequest request
     ) {
-        return userManagementService.updateApprovalStatus(userId, request.approvalStatus());
+        return userManagementService.updateApprovalStatus(userId, request.approvalStatus(), request.dateOfBirth());
     }
 
     @PatchMapping("/{userId}/admin")
@@ -46,5 +47,13 @@ public class AdminUserController {
         @AuthenticationPrincipal AuthenticatedUser currentUser
     ) {
         return userManagementService.updateAdminStatus(userId, request.isAdmin(), currentUser.id());
+    }
+
+    @PatchMapping("/{userId}/date-of-birth")
+    public UserResponse updateDateOfBirth(
+        @PathVariable Long userId,
+        @RequestBody UpdateUserDateOfBirthRequest request
+    ) {
+        return userManagementService.updateDateOfBirth(userId, request.dateOfBirth());
     }
 }

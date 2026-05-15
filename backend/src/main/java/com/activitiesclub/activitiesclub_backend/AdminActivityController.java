@@ -112,6 +112,7 @@ public class AdminActivityController {
                 root.path("ticketPrice").isNull() || root.path("ticketPrice").isMissingNode()
                     ? null
                     : root.path("ticketPrice").decimalValue(),
+                root.path("isOvernight").asBoolean(false),
                 root.path("visibility").isNull() || root.path("visibility").isMissingNode()
                     ? null
                     : ActivityVisibility.valueOf(root.path("visibility").asText()),

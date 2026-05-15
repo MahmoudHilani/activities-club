@@ -65,6 +65,11 @@ public class Activity {
 
     @Getter
     @Setter
+    @Column(name = "is_overnight", nullable = false)
+    private boolean isOvernight;
+
+    @Getter
+    @Setter
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ActivityStatus status = ActivityStatus.DRAFT;

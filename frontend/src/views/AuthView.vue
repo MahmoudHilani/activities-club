@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import LoginForm from '@/components/auth/LoginForm.vue'
@@ -23,26 +23,20 @@ function buildAuthQuery(mode: AuthMode, redirect: string) {
   }
 }
 
-const currentTab = ref<AuthMode>(resolveMode(route.query.mode))
+const currentTab = computed<AuthMode>({
+  get: () => resolveMode(route.query.mode),
+  set: (value) => {
+    if (value === resolveMode(route.query.mode)) {
+      return
+    }
 
-watch(
-  () => route.query.mode,
-  (value) => {
-    currentTab.value = resolveMode(value)
+    const redirectPath = resolveRedirectPath(route.query.redirect, '')
+
+    void router.replace({
+      name: 'auth',
+      query: buildAuthQuery(value, redirectPath),
+    })
   },
-)
-
-watch(currentTab, async (value) => {
-  if (route.query.mode === value) {
-    return
-  }
-
-  const redirectPath = resolveRedirectPath(route.query.redirect, '')
-
-  await router.replace({
-    name: 'auth',
-    query: buildAuthQuery(value, redirectPath),
-  })
 })
 </script>
 

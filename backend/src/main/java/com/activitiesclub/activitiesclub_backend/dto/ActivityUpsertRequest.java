@@ -32,6 +32,8 @@ public record ActivityUpsertRequest(
     @DecimalMin(value = "0.00", inclusive = true)
     BigDecimal ticketPrice,
 
+    boolean isOvernight,
+
     ActivityVisibility visibility,
 
     Instant reservationOpensAt,

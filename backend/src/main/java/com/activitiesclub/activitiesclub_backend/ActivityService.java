@@ -219,6 +219,7 @@ public class ActivityService {
         activity.setLocationAddress(trimToNull(request.locationAddress()));
         activity.setCapacity(request.capacity());
         activity.setTicketPrice(request.ticketPrice() == null ? java.math.BigDecimal.ZERO : request.ticketPrice());
+        activity.setOvernight(request.isOvernight());
         activity.setVisibility(request.visibility() == null ? ActivityVisibility.PUBLIC : request.visibility());
         activity.setReservationOpensAt(request.reservationOpensAt());
         activity.setReservationClosesAt(request.reservationClosesAt());
