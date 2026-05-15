@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Griffith College Activities — Issue Nº 07</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --paper: #f4ecdc;
+        --paper-2: #ece2cc;
+        --ink: #16213f;
+        --ink-soft: #4a4537;
+        --rule: #d3c6a8;
+        --accent: #8a2c2c;
+        --gold: #b48a3e;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: "Newsreader", Georgia, serif;
+        font-optical-sizing: auto;
+        font-size: 17px;
+        line-height: 1.55;
+        background-image:
+          radial-gradient(1200px 600px at 80% -10%, rgba(180, 138, 62, 0.12), transparent 60%),
+          radial-gradient(1000px 500px at -10% 110%, rgba(138, 44, 44, 0.08), transparent 60%);
+        background-attachment: fixed;
+      }
+
+      /* Paper grain */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.5;
+        mix-blend-mode: multiply;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1  0 0 0 0 0.1  0 0 0 0 0.1  0 0 0 0.07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+        z-index: 1;
+      }
+
+      .mono {
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+
+      .display {
+        font-family: "Cormorant Garamond", "Times New Roman", serif;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+        line-height: 0.96;
+      }
+
+      .ital {
+        font-style: italic;
+        font-family: "Cormorant Garamond", serif;
+        font-weight: 500;
+      }
+
+      .container {
+        position: relative;
+        z-index: 2;
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 0 48px;
+      }
+
+      /* Masthead */
+      header.masthead {
+        border-bottom: 1px solid var(--ink);
+        padding-top: 28px;
+        padding-bottom: 22px;
+      }
+      .masthead-row {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: end;
+        gap: 24px;
+      }
+      .masthead-left .mono,
+      .masthead-right .mono {
+        display: block;
+      }
+      .masthead-right {
+        text-align: right;
+      }
+      .wordmark {
+        font-family: "Cormorant Garamond", serif;
+        font-weight: 700;
+        font-size: 38px;
+        letter-spacing: -0.01em;
+        line-height: 1;
+        text-align: center;
+      }
+      .wordmark .amp {
+        font-style: italic;
+        font-weight: 500;
+        color: var(--accent);
+      }
+      .sub-rule {
+        margin-top: 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 3px double var(--ink);
+        padding-top: 10px;
+      }
+      .sub-rule nav a {
+        color: var(--ink);
+        text-decoration: none;
+        margin-right: 22px;
+        font-family: "Newsreader", serif;
+        font-size: 14px;
+      }
+      .sub-rule nav a:hover {
+        font-style: italic;
+        color: var(--accent);
+      }
+      .sub-rule .right {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+
+      /* Hero */
+      .hero {
+        display: grid;
+        grid-template-columns: 1.05fr 1fr;
+        gap: 56px;
+        padding: 64px 0 56px;
+        border-bottom: 1px solid var(--rule);
+        position: relative;
+      }
+      .kicker {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        margin-bottom: 22px;
+      }
+      .kicker .pip {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: var(--accent);
+        border-radius: 50%;
+      }
+
+      .headline {
+        font-size: clamp(56px, 8.2vw, 124px);
+      }
+      .headline .ital {
+        color: var(--accent);
+      }
+      .deck {
+        margin-top: 28px;
+        max-width: 46ch;
+        font-size: 19px;
+        line-height: 1.5;
+        color: var(--ink-soft);
+      }
+      .deck::first-letter {
+        font-family: "Cormorant Garamond", serif;
+        font-weight: 700;
+        float: left;
+        font-size: 64px;
+        line-height: 0.84;
+        padding: 6px 10px 0 0;
+        color: var(--ink);
+      }
+
+      .search {
+        margin-top: 36px;
+        max-width: 560px;
+      }
+      .search-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1.5px solid var(--ink);
+        padding: 12px 0;
+      }
+      .search-row input {
+        flex: 1;
+        background: transparent;
+        border: 0;
+        outline: 0;
+        font-family: "Cormorant Garamond", serif;
+        font-size: 26px;
+        color: var(--ink);
+      }
+      .search-row input::placeholder {
+        color: var(--ink-soft);
+        font-style: italic;
+      }
+      .search-row button {
+        background: var(--ink);
+        color: var(--paper);
+        border: 0;
+        padding: 12px 22px;
+        font-family: "Newsreader", serif;
+        font-size: 15px;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .search-row button:hover {
+        background: var(--accent);
+      }
+      .search-meta {
+        margin-top: 10px;
+        display: flex;
+        gap: 18px;
+      }
+      .search-meta a {
+        color: var(--ink-soft);
+        text-decoration: none;
+        font-size: 13px;
+        font-style: italic;
+        border-bottom: 1px solid currentColor;
+        padding-bottom: 1px;
+      }
+      .search-meta a:hover {
+        color: var(--accent);
+      }
+
+      .hero-img {
+        position: relative;
+      }
+      .hero-img figure {
+        margin: 0;
+      }
+      .hero-img .frame {
+        aspect-ratio: 4/5;
+        background:
+          linear-gradient(160deg, rgba(22, 33, 63, 0.2), rgba(22, 33, 63, 0.55)),
+          url("https://picsum.photos/seed/ridge-walk-griffith/900/1100") center/cover;
+        position: relative;
+        box-shadow: 0 30px 60px rgba(20, 25, 50, 0.18);
+      }
+      .hero-img .caption {
+        margin-top: 16px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        max-width: 38ch;
+      }
+      .hero-img .caption .accent {
+        color: var(--accent);
+      }
+      .hero-img .pagenum {
+        position: absolute;
+        top: -22px;
+        right: 0;
+        font-family: "Cormorant Garamond", serif;
+        font-style: italic;
+        font-size: 15px;
+        color: var(--ink-soft);
+      }
+
+      /* Section: In this issue */
+      .section-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin: 64px 0 28px;
+        padding-bottom: 14px;
+        border-bottom: 3px double var(--ink);
+      }
+      .section-head h2 {
+        margin: 0;
+        font-family: "Cormorant Garamond", serif;
+        font-weight: 700;
+        font-size: 44px;
+        letter-spacing: -0.01em;
+      }
+      .section-head h2 em {
+        color: var(--accent);
+      }
+
+      .articles {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 36px;
+        padding-bottom: 80px;
+      }
+      .article {
+        cursor: pointer;
+        transition: transform 0.3s;
+      }
+      .article:hover {
+        transform: translateY(-4px);
+      }
+      .article .num {
+        font-family: "Cormorant Garamond", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-size: 14px;
+        color: var(--accent);
+        letter-spacing: 0.04em;
+        margin-bottom: 8px;
+      }
+      .article .photo {
+        aspect-ratio: 5/4;
+        background-size: cover;
+        background-position: center;
+        margin-bottom: 18px;
+        filter: saturate(0.85) contrast(1.05);
+      }
+      .article h3 {
+        margin: 0 0 8px;
+        font-family: "Cormorant Garamond", serif;
+        font-weight: 700;
+        font-size: 28px;
+        line-height: 1.05;
+        letter-spacing: -0.01em;
+      }
+      .article h3 em {
+        font-weight: 500;
+      }
+      .article p {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      .article .meta {
+        margin-top: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 10px;
+        border-top: 1px solid var(--rule);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+      .article .meta .price {
+        color: var(--ink);
+      }
+
+      .colophon {
+        border-top: 1px solid var(--ink);
+        padding: 28px 0 56px;
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .colophon .left h4 {
+        margin: 0 0 6px;
+        font-family: "Cormorant Garamond", serif;
+        font-weight: 700;
+        font-size: 32px;
+      }
+      .colophon .left p {
+        margin: 0;
+        max-width: 44ch;
+        color: var(--ink-soft);
+        font-size: 15px;
+      }
+      .colophon .right {
+        text-align: right;
+      }
+      .colophon .right .mono {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .colophon .right a {
+        font-family: "Cormorant Garamond", serif;
+        font-style: italic;
+        font-size: 22px;
+        color: var(--accent);
+        text-decoration: none;
+        border-bottom: 1px solid var(--accent);
+        padding-bottom: 2px;
+      }
+
+      /* Reveal */
+      .reveal {
+        opacity: 0;
+        transform: translateY(14px);
+        transition:
+          opacity 0.9s ease,
+          transform 0.9s ease;
+        transition-delay: var(--delay, 0ms);
+      }
+      .reveal.in {
+        opacity: 1;
+        transform: none;
+      }
+
+      @media (max-width: 900px) {
+        .container {
+          padding: 0 22px;
+        }
+        .masthead-row {
+          grid-template-columns: 1fr;
+          text-align: center;
+        }
+        .masthead-right,
+        .masthead-left {
+          text-align: center;
+        }
+        .sub-rule {
+          flex-direction: column;
+          gap: 10px;
+          text-align: center;
+        }
+        .sub-rule nav a {
+          margin: 0 10px;
+        }
+        .hero {
+          grid-template-columns: 1fr;
+          gap: 36px;
+        }
+        .articles {
+          grid-template-columns: 1fr;
+        }
+        .section-head {
+          flex-direction: column;
+          gap: 8px;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header class="masthead reveal">
+        <div class="masthead-row">
+          <div class="masthead-left">
+            <span class="mono">Established 1813 · Dublin 8</span>
+            <span class="mono" style="margin-top: 4px; display: block">Issue Nº 07 · Spring 2026</span>
+          </div>
+          <div class="wordmark">
+            Griffith College <span class="amp">&amp;</span> Activities
+          </div>
+          <div class="masthead-right">
+            <span class="mono">Sport · Adventure · Wellness</span>
+            <span class="mono" style="margin-top: 4px; display: block">For students &amp; members</span>
+          </div>
+        </div>
+        <div class="sub-rule">
+          <nav>
+            <a href="#">What's on</a>
+            <a href="#">Trips</a>
+            <a href="#">Wellness</a>
+            <a href="#">Our story</a>
+            <a href="#">Members' lounge</a>
+          </nav>
+          <div class="right">Sign in · Become a member</div>
+        </div>
+      </header>
+
+      <section class="hero">
+        <div class="hero-text reveal" style="--delay: 120ms">
+          <div class="kicker">
+            <span class="pip"></span>
+            <span class="mono">The Field Journal · Cover Story</span>
+          </div>
+          <h1 class="display headline">
+            Where will <span class="ital">you</span><br />
+            wander <span class="ital">this</span><br />
+            weekend?
+          </h1>
+          <p class="deck">
+            Three new trips, twelve weekly sessions, and a quiet morning swim at Sandycove for
+            anyone who needs it. Pick your pace — we'll bring the bus, the boots, and the kettle
+            for tea afterwards.
+          </p>
+          <div class="search">
+            <div class="search-row">
+              <input
+                type="text"
+                placeholder="Search for hikes, climbs, yoga, anything…"
+              />
+              <button>Find an activity</button>
+            </div>
+            <div class="search-meta">
+              <a href="#">Browse all 47 activities</a>
+              <a href="#">This weekend's picks</a>
+              <a href="#">Free for first-timers</a>
+            </div>
+          </div>
+        </div>
+        <div class="hero-img reveal" style="--delay: 300ms">
+          <span class="pagenum">— p. iii —</span>
+          <figure>
+            <div class="frame"></div>
+            <figcaption class="caption">
+              <span class="accent">Plate I.</span> First light, Glendalough upper lake — students
+              of the Hillwalking Society, photographed by S. Ní Bhriain
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <div class="section-head reveal">
+        <h2>In <em>this</em> issue</h2>
+        <span class="mono">Five activities · Booking now open</span>
+      </div>
+
+      <section class="articles">
+        <article class="article reveal" style="--delay: 0ms">
+          <div class="num">№ 01 · Trip</div>
+          <div
+            class="photo"
+            style="background-image: url('https://picsum.photos/seed/glendalough-hike/700/560')"
+          ></div>
+          <h3>Spinc Ridge <em>at dawn</em></h3>
+          <p>
+            A six-hour loop above Glendalough, leaving Griffith at 06:00. Boots required, optimism
+            encouraged.
+          </p>
+          <div class="meta">
+            <span>Sat · 14 Mar</span>
+            <span class="price">€12 · members free</span>
+          </div>
+        </article>
+
+        <article class="article reveal" style="--delay: 100ms">
+          <div class="num">№ 02 · Weekly</div>
+          <div
+            class="photo"
+            style="background-image: url('https://picsum.photos/seed/yoga-studio-warm/700/560')"
+          ></div>
+          <h3>Slow yoga <em>with Niamh</em></h3>
+          <p>
+            Tuesdays at the studio, 18:30. A gentle restorative practice — props, blankets, and
+            zero pressure to fold into anything.
+          </p>
+          <div class="meta">
+            <span>Tue · weekly</span>
+            <span class="price">€5 drop-in</span>
+          </div>
+        </article>
+
+        <article class="article reveal" style="--delay: 200ms">
+          <div class="num">№ 03 · Adventure</div>
+          <div
+            class="photo"
+            style="background-image: url('https://picsum.photos/seed/sea-kayak-howth/700/560')"
+          ></div>
+          <h3>Sea-kayak <em>at Howth</em></h3>
+          <p>
+            Half-day paddle around the cliffs with the Adventure Society. All gear and a hot
+            chocolate on return included.
+          </p>
+          <div class="meta">
+            <span>Sun · 22 Mar</span>
+            <span class="price">€28</span>
+          </div>
+        </article>
+      </section>
+
+      <section class="colophon">
+        <div class="left">
+          <h4>Become a member, March onward.</h4>
+          <p>
+            One annual fee. Every weekly class, every trip discounted, and a printed copy of the
+            Field Journal posted to your door each term.
+          </p>
+        </div>
+        <div class="right">
+          <span class="mono">Membership · 2026</span>
+          <a href="#">Join the Activities Team →</a>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) {
+              e.target.classList.add("in");
+              io.unobserve(e.target);
+            }
+          }
+        },
+        { threshold: 0.12 },
+      );
+      document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+    </script>
+  </body>
+</html>

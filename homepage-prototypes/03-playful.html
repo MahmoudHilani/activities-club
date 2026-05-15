@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Griffith Activities — Find your people</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Caveat:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --cream: #fdf6ec;
+        --cream-2: #fbeed7;
+        --ink: #16306b;
+        --ink-2: #29478c;
+        --coral: #ff7a59;
+        --ochre: #f5b042;
+        --leaf: #5ba572;
+        --pink: #ffc6c0;
+        --lilac: #c9c4ff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+        background: var(--cream);
+        color: var(--ink);
+        font-size: 16px;
+        line-height: 1.55;
+        overflow-x: hidden;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        background:
+          radial-gradient(700px 500px at 8% 12%, rgba(255, 122, 89, 0.18), transparent 60%),
+          radial-gradient(800px 600px at 92% 18%, rgba(245, 176, 66, 0.18), transparent 60%),
+          radial-gradient(900px 600px at 50% 95%, rgba(91, 165, 114, 0.14), transparent 60%);
+      }
+
+      .container {
+        position: relative;
+        z-index: 2;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 28px;
+      }
+
+      .display {
+        font-family: "Caprasimo", "Georgia", serif;
+        font-weight: 400;
+        line-height: 0.96;
+      }
+      .hand {
+        font-family: "Caveat", "Comic Sans MS", cursive;
+        font-weight: 700;
+      }
+
+      /* NAV */
+      header.nav {
+        padding: 22px 0;
+      }
+      .nav-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .brand-mark {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: var(--ink);
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--cream);
+        font-family: "Caprasimo", serif;
+        font-size: 22px;
+        box-shadow:
+          4px 4px 0 var(--coral),
+          8px 8px 0 var(--ochre);
+      }
+      .brand-text {
+        font-family: "Caprasimo", serif;
+        font-size: 20px;
+        line-height: 1.05;
+      }
+      .brand-text small {
+        display: block;
+        font-family: "Caveat", cursive;
+        font-weight: 500;
+        font-size: 16px;
+        color: var(--coral);
+        margin-top: 2px;
+      }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+      }
+      .nav-links a {
+        color: var(--ink);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 15px;
+        position: relative;
+      }
+      .nav-links a:hover {
+        color: var(--coral);
+      }
+      .nav-links a.active::after {
+        content: "";
+        position: absolute;
+        left: -4px;
+        right: -4px;
+        bottom: -6px;
+        height: 6px;
+        background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 8' width='80' height='8'><path d='M2 5 Q 14 1, 28 5 T 54 5 T 78 5' stroke='%23ff7a59' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>")
+          repeat-x;
+      }
+      .nav-cta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .btn-ghost {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--ink);
+        text-decoration: none;
+        padding: 10px 16px;
+        border-radius: 999px;
+        transition: background 0.2s;
+      }
+      .btn-ghost:hover {
+        background: rgba(22, 48, 107, 0.06);
+      }
+      .btn-primary {
+        background: var(--ink);
+        color: var(--cream);
+        font-weight: 700;
+        font-size: 14px;
+        padding: 12px 22px;
+        border-radius: 999px;
+        text-decoration: none;
+        display: inline-block;
+        box-shadow:
+          3px 3px 0 var(--coral),
+          6px 6px 0 var(--ochre);
+        transition:
+          transform 0.15s,
+          box-shadow 0.15s;
+      }
+      .btn-primary:hover {
+        transform: translate(-2px, -2px);
+        box-shadow:
+          5px 5px 0 var(--coral),
+          10px 10px 0 var(--ochre);
+      }
+
+      /* HERO */
+      .hero {
+        padding: 56px 0 72px;
+        position: relative;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 280px 1fr 280px;
+        align-items: center;
+        gap: 32px;
+        position: relative;
+      }
+
+      .hero-center {
+        text-align: center;
+      }
+      .hero-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--cream-2);
+        color: var(--ink);
+        padding: 8px 18px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 13px;
+        letter-spacing: 0.04em;
+        border: 1.5px solid var(--ink);
+        box-shadow: 3px 3px 0 var(--ink);
+        margin-bottom: 28px;
+        transform: rotate(-1.5deg);
+      }
+      .hero-eyebrow .dot {
+        width: 8px;
+        height: 8px;
+        background: var(--coral);
+        border-radius: 50%;
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.4);
+          opacity: 0.6;
+        }
+      }
+
+      .hero-headline {
+        font-size: clamp(48px, 7vw, 96px);
+        max-width: 800px;
+        margin: 0 auto 12px;
+      }
+      .hero-headline .ink {
+        color: var(--ink);
+      }
+      .hero-headline .scribble {
+        position: relative;
+        display: inline-block;
+        font-family: "Caveat", cursive;
+        font-weight: 700;
+        color: var(--coral);
+        font-size: 1.15em;
+        line-height: 0.9;
+        padding: 0 6px;
+      }
+      .hero-headline .scribble::after {
+        content: "";
+        position: absolute;
+        left: -2px;
+        right: -2px;
+        bottom: 4px;
+        height: 8px;
+        background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' width='100' height='8'><path d='M2 5 Q 16 1, 32 5 T 64 5 T 98 5' stroke='%23ff7a59' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>")
+          repeat-x;
+      }
+      .hero-headline .leaf {
+        color: var(--leaf);
+        font-family: "Caveat", cursive;
+        font-weight: 700;
+        font-size: 1.1em;
+      }
+      .hero-deck {
+        margin: 20px auto 32px;
+        max-width: 540px;
+        font-size: 18px;
+        line-height: 1.55;
+        color: var(--ink-2);
+      }
+      .hero-cta {
+        display: inline-flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+      }
+      .hero-cta .arrow-note {
+        position: relative;
+        font-family: "Caveat", cursive;
+        font-size: 22px;
+        color: var(--ink-2);
+        padding-left: 50px;
+      }
+      .hero-cta .arrow-note::before {
+        content: "";
+        position: absolute;
+        left: 6px;
+        top: 50%;
+        width: 38px;
+        height: 22px;
+        transform: translateY(-50%) rotate(-12deg);
+        background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 24' width='40' height='24'><path d='M38 12 Q 22 22 6 12' stroke='%2316306b' stroke-width='2' fill='none' stroke-linecap='round'/><path d='M14 7 L 6 12 L 14 17' stroke='%2316306b' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+          no-repeat center/contain;
+      }
+
+      /* Photo cutouts on either side */
+      .photo-cutout {
+        position: relative;
+      }
+      .photo-cutout .blob {
+        position: absolute;
+        inset: -14px;
+        z-index: 0;
+      }
+      .photo-cutout img,
+      .photo-cutout .ph {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        aspect-ratio: 4/5;
+        object-fit: cover;
+        display: block;
+        background-size: cover;
+        background-position: center;
+        clip-path: polygon(
+          18% 4%,
+          82% 1%,
+          96% 22%,
+          99% 76%,
+          88% 96%,
+          24% 99%,
+          4% 82%,
+          1% 28%
+        );
+      }
+      .photo-cutout.left .blob {
+        background: var(--coral);
+        opacity: 0.55;
+        clip-path: polygon(
+          22% 8%,
+          78% 5%,
+          92% 28%,
+          95% 72%,
+          84% 92%,
+          28% 95%,
+          8% 78%,
+          5% 32%
+        );
+      }
+      .photo-cutout.right .blob {
+        background: var(--ochre);
+        opacity: 0.55;
+        clip-path: polygon(
+          20% 6%,
+          80% 4%,
+          95% 28%,
+          97% 76%,
+          82% 94%,
+          22% 96%,
+          6% 80%,
+          3% 30%
+        );
+      }
+      .photo-cutout .sticker {
+        position: absolute;
+        z-index: 2;
+        font-family: "Caveat", cursive;
+        font-weight: 700;
+        font-size: 18px;
+        background: var(--ink);
+        color: var(--cream);
+        padding: 4px 14px;
+        border-radius: 999px;
+        box-shadow: 2px 2px 0 var(--cream);
+        transform: rotate(-6deg);
+      }
+      .photo-cutout.left .sticker {
+        bottom: 18px;
+        left: -10px;
+        background: var(--coral);
+        color: var(--cream);
+      }
+      .photo-cutout.right .sticker {
+        bottom: 28px;
+        right: -10px;
+        background: var(--ochre);
+        color: var(--ink);
+        transform: rotate(6deg);
+      }
+      .photo-cutout .musical {
+        position: absolute;
+        z-index: 2;
+        font-family: "Caprasimo", serif;
+        font-size: 36px;
+        color: var(--leaf);
+      }
+      .photo-cutout.left .musical {
+        bottom: -10px;
+        right: -6px;
+        transform: rotate(15deg);
+      }
+      .photo-cutout.right .musical {
+        top: -10px;
+        left: -6px;
+        transform: rotate(-15deg);
+      }
+
+      /* SEARCH BAR FLOATING */
+      .search-floating {
+        max-width: 720px;
+        margin: 56px auto 0;
+        background: white;
+        border: 2px solid var(--ink);
+        border-radius: 999px;
+        padding: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow:
+          5px 5px 0 var(--coral),
+          10px 10px 0 var(--ochre);
+        position: relative;
+      }
+      .search-floating::before {
+        content: "👀";
+        position: absolute;
+        top: -34px;
+        left: 32px;
+        font-size: 28px;
+        transform: rotate(-8deg);
+      }
+      .search-floating::after {
+        content: "looking for something?";
+        position: absolute;
+        top: -22px;
+        left: 70px;
+        font-family: "Caveat", cursive;
+        font-weight: 700;
+        font-size: 20px;
+        color: var(--ink);
+      }
+      .search-floating .icon {
+        width: 50px;
+        height: 50px;
+        background: var(--cream-2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+      }
+      .search-floating input {
+        flex: 1;
+        border: 0;
+        background: transparent;
+        padding: 10px 14px;
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 17px;
+        color: var(--ink);
+        outline: 0;
+      }
+      .search-floating button {
+        background: var(--ink);
+        color: var(--cream);
+        border: 0;
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-weight: 700;
+        font-size: 15px;
+        padding: 14px 26px;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .search-floating button:hover {
+        background: var(--coral);
+      }
+
+      /* CATEGORIES */
+      .cats {
+        margin-top: 32px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+      }
+      .cat-pill {
+        background: white;
+        border: 1.5px solid var(--ink);
+        color: var(--ink);
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 13px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition:
+          transform 0.15s,
+          box-shadow 0.15s,
+          background 0.15s;
+      }
+      .cat-pill:hover {
+        transform: translateY(-2px);
+        box-shadow: 3px 3px 0 var(--ink);
+      }
+      .cat-pill .emoji {
+        font-size: 14px;
+      }
+      .cat-pill.coral {
+        background: var(--coral);
+        color: white;
+      }
+      .cat-pill.ochre {
+        background: var(--ochre);
+        color: var(--ink);
+      }
+      .cat-pill.leaf {
+        background: var(--leaf);
+        color: white;
+      }
+
+      /* ACTIVITY GRID */
+      .happenings {
+        padding: 80px 0 60px;
+      }
+      .section-title {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 36px;
+        flex-wrap: wrap;
+      }
+      .section-title h2 {
+        margin: 0;
+        font-family: "Caprasimo", serif;
+        font-weight: 400;
+        font-size: clamp(36px, 5vw, 56px);
+        line-height: 1;
+      }
+      .section-title h2 em {
+        font-family: "Caveat", cursive;
+        font-weight: 700;
+        color: var(--coral);
+        font-style: normal;
+        font-size: 1.05em;
+      }
+      .section-title .see-all {
+        color: var(--ink);
+        text-decoration: none;
+        font-weight: 700;
+        border-bottom: 2px solid var(--ink);
+        padding-bottom: 2px;
+      }
+      .section-title .see-all:hover {
+        color: var(--coral);
+        border-color: var(--coral);
+      }
+
+      .happen-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 28px;
+      }
+      .happen-card {
+        background: white;
+        border: 2px solid var(--ink);
+        border-radius: 24px;
+        overflow: hidden;
+        position: relative;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+        cursor: pointer;
+        box-shadow: 4px 4px 0 var(--ink);
+      }
+      .happen-card:hover {
+        transform: translate(-2px, -2px);
+        box-shadow: 8px 8px 0 var(--ink);
+      }
+      .happen-card .photo {
+        aspect-ratio: 4/3;
+        background-size: cover;
+        background-position: center;
+        border-bottom: 2px solid var(--ink);
+        position: relative;
+      }
+      .happen-card .photo .tag {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        background: var(--ink);
+        color: var(--cream);
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-family: "Caveat", cursive;
+        font-weight: 700;
+        font-size: 17px;
+        transform: rotate(-3deg);
+      }
+      .happen-card .photo .tag.coral {
+        background: var(--coral);
+      }
+      .happen-card .photo .tag.ochre {
+        background: var(--ochre);
+        color: var(--ink);
+      }
+      .happen-card .photo .tag.leaf {
+        background: var(--leaf);
+      }
+      .happen-card .body {
+        padding: 22px 22px 20px;
+      }
+      .happen-card h3 {
+        margin: 0 0 6px;
+        font-family: "Caprasimo", serif;
+        font-weight: 400;
+        font-size: 26px;
+        line-height: 1.1;
+      }
+      .happen-card .when {
+        font-family: "Caveat", cursive;
+        font-weight: 700;
+        font-size: 18px;
+        color: var(--coral);
+        margin-bottom: 12px;
+      }
+      .happen-card p {
+        margin: 0 0 18px;
+        font-size: 14.5px;
+        color: var(--ink-2);
+        line-height: 1.55;
+      }
+      .happen-card .foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 14px;
+        border-top: 1.5px dashed rgba(22, 48, 107, 0.2);
+      }
+      .happen-card .avatars {
+        display: flex;
+      }
+      .happen-card .avatars .a {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid white;
+        margin-left: -8px;
+        background-size: cover;
+        background-position: center;
+      }
+      .happen-card .avatars .a:first-child {
+        margin-left: 0;
+      }
+      .happen-card .going {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink-2);
+        margin-left: 10px;
+      }
+      .happen-card .going strong {
+        color: var(--ink);
+      }
+      .happen-card .price {
+        font-family: "Caprasimo", serif;
+        font-size: 22px;
+        color: var(--ink);
+      }
+      .happen-card .price.free {
+        color: var(--leaf);
+      }
+
+      /* CTA STRIP */
+      .cta-strip {
+        position: relative;
+        margin: 24px 0 80px;
+        padding: 56px 40px;
+        background: var(--ink);
+        color: var(--cream);
+        border-radius: 36px;
+        overflow: hidden;
+      }
+      .cta-strip::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(400px 300px at 12% 30%, rgba(255, 122, 89, 0.4), transparent 60%),
+          radial-gradient(400px 300px at 90% 70%, rgba(245, 176, 66, 0.35), transparent 60%);
+      }
+      .cta-strip-inner {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 40px;
+        align-items: center;
+      }
+      .cta-strip h3 {
+        margin: 0 0 12px;
+        font-family: "Caprasimo", serif;
+        font-weight: 400;
+        font-size: clamp(36px, 5vw, 64px);
+        line-height: 1;
+      }
+      .cta-strip h3 em {
+        font-family: "Caveat", cursive;
+        font-weight: 700;
+        color: var(--ochre);
+        font-style: normal;
+        font-size: 1.1em;
+      }
+      .cta-strip p {
+        margin: 0 0 22px;
+        font-size: 17px;
+        opacity: 0.85;
+        max-width: 50ch;
+      }
+      .cta-strip .btn-join {
+        display: inline-block;
+        background: var(--coral);
+        color: white;
+        padding: 16px 28px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 15px;
+        text-decoration: none;
+        box-shadow: 4px 4px 0 var(--cream);
+        transition: transform 0.15s;
+      }
+      .cta-strip .btn-join:hover {
+        transform: translate(-2px, -2px);
+      }
+      .cta-strip .right {
+        text-align: center;
+      }
+      .cta-strip .right .price-big {
+        font-family: "Caprasimo", serif;
+        font-size: 96px;
+        line-height: 1;
+        color: var(--ochre);
+      }
+      .cta-strip .right .per {
+        font-family: "Caveat", cursive;
+        font-size: 28px;
+        margin-top: -8px;
+      }
+      .cta-strip .right .scribble-arrow {
+        font-family: "Caveat", cursive;
+        font-size: 20px;
+        opacity: 0.9;
+        margin-top: 12px;
+      }
+
+      .reveal {
+        opacity: 0;
+        transform: translateY(18px);
+        transition:
+          opacity 0.7s ease,
+          transform 0.7s ease;
+        transition-delay: var(--delay, 0ms);
+      }
+      .reveal.in {
+        opacity: 1;
+        transform: none;
+      }
+
+      @media (max-width: 900px) {
+        .hero-grid {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+        .photo-cutout {
+          max-width: 280px;
+          margin: 0 auto;
+        }
+        .nav-links {
+          display: none;
+        }
+        .happen-grid {
+          grid-template-columns: 1fr;
+        }
+        .cta-strip-inner {
+          grid-template-columns: 1fr;
+          text-align: center;
+        }
+        .cta-strip p {
+          margin-left: auto;
+          margin-right: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header class="nav reveal">
+        <div class="nav-row">
+          <div class="brand">
+            <div class="brand-mark">g</div>
+            <div class="brand-text">
+              Griffith Activities
+              <small>sport · adventure · wellness ✿</small>
+            </div>
+          </div>
+          <nav class="nav-links">
+            <a href="#" class="active">What's on</a>
+            <a href="#">Weekly classes</a>
+            <a href="#">Trips</a>
+            <a href="#">Our community</a>
+          </nav>
+          <div class="nav-cta">
+            <a href="#" class="btn-ghost">Sign in</a>
+            <a href="#" class="btn-primary">Become a member</a>
+          </div>
+        </div>
+      </header>
+
+      <section class="hero">
+        <div class="hero-grid">
+          <div class="photo-cutout left reveal" style="--delay: 80ms">
+            <div class="blob"></div>
+            <div
+              class="ph"
+              style="
+                background-image: url('https://picsum.photos/seed/group-hike-friends/500/640');
+              "
+            ></div>
+            <div class="sticker">hike club ✿</div>
+            <div class="musical">♪</div>
+          </div>
+
+          <div class="hero-center">
+            <div class="hero-eyebrow reveal" style="--delay: 120ms">
+              <span class="dot"></span> 47 things happening this week
+            </div>
+            <h1 class="display hero-headline reveal" style="--delay: 200ms">
+              <span class="ink">Find</span> your
+              <span class="scribble">people</span>,<br />
+              <span class="ink">find</span> your
+              <span class="leaf">hill ⛰</span>.
+            </h1>
+            <p class="hero-deck reveal" style="--delay: 280ms">
+              Hiking, climbing, sea-swimming, slow yoga and the very occasional 5k. Run by
+              students, open to everyone at Griffith — no fitness required, snacks usually
+              involved.
+            </p>
+            <div class="hero-cta reveal" style="--delay: 360ms">
+              <a href="#" class="btn-primary" style="font-size: 16px; padding: 16px 28px">
+                See what's on this week →
+              </a>
+              <span class="arrow-note">…or just have a wander</span>
+            </div>
+          </div>
+
+          <div class="photo-cutout right reveal" style="--delay: 160ms">
+            <div class="blob"></div>
+            <div
+              class="ph"
+              style="
+                background-image: url('https://picsum.photos/seed/yoga-mat-warm-light/500/640');
+              "
+            ></div>
+            <div class="sticker">every tue 18:30</div>
+            <div class="musical">✦</div>
+          </div>
+        </div>
+
+        <div class="search-floating reveal" style="--delay: 420ms">
+          <div class="icon">🔍</div>
+          <input type="text" placeholder="try 'hike', 'yoga', 'wild swim'…" />
+          <button type="button">Search</button>
+        </div>
+
+        <div class="cats reveal" style="--delay: 500ms">
+          <a href="#" class="cat-pill coral"><span class="emoji">⛰</span> Hiking</a>
+          <a href="#" class="cat-pill ochre"><span class="emoji">🧗</span> Climbing</a>
+          <a href="#" class="cat-pill leaf"><span class="emoji">🌊</span> Wild swim</a>
+          <a href="#" class="cat-pill"><span class="emoji">🧘</span> Yoga</a>
+          <a href="#" class="cat-pill"><span class="emoji">🏃</span> Running</a>
+          <a href="#" class="cat-pill"><span class="emoji">🚲</span> Cycling</a>
+          <a href="#" class="cat-pill"><span class="emoji">🛶</span> Kayak</a>
+          <a href="#" class="cat-pill"><span class="emoji">✨</span> Show all 47</a>
+        </div>
+      </section>
+
+      <section class="happenings">
+        <div class="section-title reveal">
+          <h2>This <em>week</em>, in case you're free</h2>
+          <a href="#" class="see-all">Browse everything →</a>
+        </div>
+
+        <div class="happen-grid">
+          <article class="happen-card reveal" style="--delay: 0ms">
+            <div
+              class="photo"
+              style="background-image: url('https://picsum.photos/seed/spinc-friendly/700/520')"
+            >
+              <span class="tag coral">⛰ adventure</span>
+            </div>
+            <div class="body">
+              <h3>Sunrise Spinc loop</h3>
+              <div class="when">sat 14 mar · 06:00 bus</div>
+              <p>
+                Six glorious hours above Glendalough's upper lake. We bring the bus, you bring the
+                boots and breakfast bar.
+              </p>
+              <div class="foot">
+                <div style="display: flex; align-items: center">
+                  <div class="avatars">
+                    <div
+                      class="a"
+                      style="background-image: url('https://i.pravatar.cc/56?img=11')"
+                    ></div>
+                    <div
+                      class="a"
+                      style="background-image: url('https://i.pravatar.cc/56?img=32')"
+                    ></div>
+                    <div
+                      class="a"
+                      style="background-image: url('https://i.pravatar.cc/56?img=47')"
+                    ></div>
+                  </div>
+                  <span class="going"><strong>23</strong> going</span>
+                </div>
+                <div class="price">€12</div>
+              </div>
+            </div>
+          </article>
+
+          <article class="happen-card reveal" style="--delay: 100ms">
+            <div
+              class="photo"
+              style="background-image: url('https://picsum.photos/seed/yoga-friendly/700/520')"
+            >
+              <span class="tag ochre">✿ wellness</span>
+            </div>
+            <div class="body">
+              <h3>Slow yoga with Niamh</h3>
+              <div class="when">every tue · 18:30</div>
+              <p>
+                Restorative practice in the South Circular studio. Bolsters and blankets supplied,
+                no pretzel poses required.
+              </p>
+              <div class="foot">
+                <div style="display: flex; align-items: center">
+                  <div class="avatars">
+                    <div
+                      class="a"
+                      style="background-image: url('https://i.pravatar.cc/56?img=15')"
+                    ></div>
+                    <div
+                      class="a"
+                      style="background-image: url('https://i.pravatar.cc/56?img=23')"
+                    ></div>
+                    <div
+                      class="a"
+                      style="background-image: url('https://i.pravatar.cc/56?img=5')"
+                    ></div>
+                  </div>
+                  <span class="going"><strong>14</strong> going</span>
+                </div>
+                <div class="price free">free</div>
+              </div>
+            </div>
+          </article>
+
+          <article class="happen-card reveal" style="--delay: 200ms">
+            <div
+              class="photo"
+              style="background-image: url('https://picsum.photos/seed/sea-kayak-friendly/700/520')"
+            >
+              <span class="tag leaf">🌊 adventure</span>
+            </div>
+            <div class="body">
+              <h3>Sea-kayak around Howth</h3>
+              <div class="when">sun 22 mar · 09:30</div>
+              <p>
+                Half-day paddle around the cliffs. All gear included, plus a steaming hot
+                chocolate when we land.
+              </p>
+              <div class="foot">
+                <div style="display: flex; align-items: center">
+                  <div class="avatars">
+                    <div
+                      class="a"
+                      style="background-image: url('https://i.pravatar.cc/56?img=20')"
+                    ></div>
+                    <div
+                      class="a"
+                      style="background-image: url('https://i.pravatar.cc/56?img=44')"
+                    ></div>
+                    <div
+                      class="a"
+                      style="background-image: url('https://i.pravatar.cc/56?img=8')"
+                    ></div>
+                  </div>
+                  <span class="going"><strong>9</strong> going</span>
+                </div>
+                <div class="price">€28</div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="cta-strip reveal">
+        <div class="cta-strip-inner">
+          <div>
+            <h3>
+              One <em>tiny</em> fee.<br />
+              A whole year of weekends.
+            </h3>
+            <p>
+              Membership unlocks discounted trips, drop-in weekly classes, the social calendar,
+              and the WhatsApp group where the actual fun is planned.
+            </p>
+            <a href="#" class="btn-join">Become a member →</a>
+          </div>
+          <div class="right">
+            <div class="price-big">€40</div>
+            <div class="per">for the whole academic year</div>
+            <div class="scribble-arrow">↑ a single oat flat white a month, basically</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) {
+              e.target.classList.add("in");
+              io.unobserve(e.target);
+            }
+          }
+        },
+        { threshold: 0.1 },
+      );
+      document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+    </script>
+  </body>
+</html>
