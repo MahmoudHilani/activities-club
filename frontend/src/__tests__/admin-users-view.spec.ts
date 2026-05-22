@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/vue'
+import { fireEvent, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
@@ -172,7 +172,7 @@ describe('AdminUsersView', () => {
     })
   })
 
-  it('updates a student date of birth from user management', async () => {
+  it('updates a student date of birth automatically from user management', async () => {
     let managedStudent = {
       ...sampleUser,
       id: 2,
@@ -187,7 +187,7 @@ describe('AdminUsersView', () => {
       http.get('http://localhost:8080/api/admin/users', () => HttpResponse.json([managedStudent])),
       http.patch('http://localhost:8080/api/admin/users/2/date-of-birth', async ({ request }) => {
         const body = (await request.json()) as { dateOfBirth: string | null }
-        expect(body.dateOfBirth).toBe('2001-04-05')
+        expect(body.dateOfBirth).toBe('2008-01-01')
         managedStudent = {
           ...managedStudent,
           dateOfBirth: body.dateOfBirth,
@@ -196,7 +196,6 @@ describe('AdminUsersView', () => {
       }),
     )
 
-    const user = userEvent.setup()
     await renderRoute({
       route: '/admin/users',
       adminUsersComponent: AdminUsersView,
@@ -204,11 +203,14 @@ describe('AdminUsersView', () => {
 
     expect(await screen.findByText('student-member')).toBeTruthy()
 
-    await user.type(screen.getByLabelText('Date of birth for student-member'), '2001-04-05')
-    await user.click(screen.getByRole('button', { name: 'Save date of birth for student-member' }))
+    expect(
+      screen.queryByRole('button', { name: 'Save date of birth for student-member' }),
+    ).toBeNull()
+    await fireEvent.click(screen.getByRole('button', { name: 'Date of birth for student-member' }))
+    await fireEvent.click(screen.getByRole('button', { name: /January 1, 2008/ }))
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('2001-04-05')).toBeTruthy()
+      expect(screen.getByText('Jan 1, 2008')).toBeTruthy()
     })
   })
 

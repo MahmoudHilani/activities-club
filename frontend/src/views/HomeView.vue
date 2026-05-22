@@ -26,17 +26,6 @@ function submitSearch(): void {
   })
 }
 
-const categories: Array<{ emoji: string; label: string; tone?: 'coral' | 'ochre' | 'leaf' }> = [
-  { emoji: '⛰', label: 'Hiking', tone: 'coral' },
-  { emoji: '🧗', label: 'Climbing', tone: 'ochre' },
-  { emoji: '🌊', label: 'Wild swim', tone: 'leaf' },
-  { emoji: '🧘', label: 'Yoga' },
-  { emoji: '🏃', label: 'Running' },
-  { emoji: '🚲', label: 'Cycling' },
-  { emoji: '🛶', label: 'Kayak' },
-  { emoji: '✨', label: 'Show all 47' },
-]
-
 const activities: DemoActivity[] = [
   {
     id: 'spinc',
@@ -101,8 +90,7 @@ const activities: DemoActivity[] = [
           <div
             class="cutout-photo"
             :style="{
-              backgroundImage:
-                'url(https://picsum.photos/seed/group-hike-friends/500/640)',
+              backgroundImage: 'url(https://picsum.photos/seed/group-hike-friends/500/640)',
             }"
           />
           <div class="cutout-sticker cutout-sticker-coral">hike club ✿</div>
@@ -126,9 +114,26 @@ const activities: DemoActivity[] = [
 
           <div class="hero-cta">
             <RouterLink :to="{ name: 'activities' }" class="hero-cta-btn">
-              See what's on this week →
+              See what's on this week
             </RouterLink>
-            <span class="hero-cta-note">…or just have a wander</span>
+            <span class="hero-cta-note">
+              <svg class="hero-cta-arrow" aria-hidden="true" viewBox="0 0 54 28" fill="none">
+                <path
+                  d="M51 8.5C41.5 21 21.5 24.5 6 15"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M15 14.5L5.5 15L10 23"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              …or just have a wander
+            </span>
           </div>
         </div>
 
@@ -137,8 +142,7 @@ const activities: DemoActivity[] = [
           <div
             class="cutout-photo"
             :style="{
-              backgroundImage:
-                'url(https://picsum.photos/seed/yoga-mat-warm-light/500/640)',
+              backgroundImage: 'url(https://picsum.photos/seed/yoga-mat-warm-light/500/640)',
             }"
           />
           <div class="cutout-sticker cutout-sticker-ochre">every tue 18:30</div>
@@ -158,26 +162,11 @@ const activities: DemoActivity[] = [
         />
         <button type="submit" class="search-button">Search</button>
       </form>
-
-      <div class="cats">
-        <RouterLink
-          v-for="cat in categories"
-          :key="cat.label"
-          :to="{ name: 'activities' }"
-          class="cat-pill"
-          :class="cat.tone ? `cat-pill-${cat.tone}` : ''"
-        >
-          <span class="cat-pill-emoji">{{ cat.emoji }}</span>
-          {{ cat.label }}
-        </RouterLink>
-      </div>
     </section>
 
     <section class="happenings">
       <div class="section-title">
-        <h2>
-          This <em>week</em>, in case you're free
-        </h2>
+        <h2>This <em>week</em>, in case you're free</h2>
         <RouterLink :to="{ name: 'activities' }" class="see-all">Browse everything →</RouterLink>
       </div>
 
@@ -448,8 +437,7 @@ const activities: DemoActivity[] = [
   right: -2px;
   bottom: 4px;
   height: 8px;
-  background:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' width='100' height='8'><path d='M2 5 Q 16 1, 32 5 T 64 5 T 98 5' stroke='%23ff7a59' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>")
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' width='100' height='8'><path d='M2 5 Q 16 1, 32 5 T 64 5 T 98 5' stroke='%23ff7a59' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>")
     repeat-x;
 }
 .hero-headline .leaf {
@@ -498,24 +486,19 @@ const activities: DemoActivity[] = [
     8px 8px 0 var(--color-ochre);
 }
 .hero-cta-note {
-  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-hand);
   font-weight: 700;
   font-size: 22px;
   color: var(--primary);
-  padding-left: 50px;
 }
-.hero-cta-note::before {
-  content: '';
-  position: absolute;
-  left: 6px;
-  top: 50%;
-  width: 38px;
-  height: 22px;
-  transform: translateY(-50%) rotate(-12deg);
-  background:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 24' width='40' height='24'><path d='M38 12 Q 22 22 6 12' stroke='%2316306b' stroke-width='2' fill='none' stroke-linecap='round'/><path d='M14 7 L 6 12 L 14 17' stroke='%2316306b' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>")
-    no-repeat center / contain;
+.hero-cta-arrow {
+  width: 46px;
+  height: 24px;
+  flex: 0 0 auto;
+  transform: translateY(5px) rotate(-8deg);
 }
 
 /* Search */
@@ -590,54 +573,6 @@ const activities: DemoActivity[] = [
 }
 .search-button:hover {
   background: var(--color-coral);
-}
-
-/* Categories */
-.cats {
-  margin-top: 32px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-}
-.cat-pill {
-  background: white;
-  border: 1.5px solid var(--primary);
-  color: var(--primary);
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 13px;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition:
-    transform 0.15s,
-    box-shadow 0.15s,
-    background 0.15s;
-}
-.cat-pill:hover {
-  transform: translateY(-2px);
-  box-shadow: 3px 3px 0 var(--primary);
-}
-.cat-pill-emoji {
-  font-size: 14px;
-}
-.cat-pill-coral {
-  background: var(--color-coral);
-  color: white;
-  border-color: var(--color-coral);
-}
-.cat-pill-ochre {
-  background: var(--color-ochre);
-  color: var(--primary);
-  border-color: var(--color-ochre);
-}
-.cat-pill-leaf {
-  background: var(--color-leaf);
-  color: white;
-  border-color: var(--color-leaf);
 }
 
 /* Happenings */
