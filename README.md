@@ -38,6 +38,7 @@ That command:
 - runs the backend locally with `spring-boot:run`
 - runs the frontend locally with Vite
 - stores uploaded activity images in `public/uploads` at the repository root by default
+- starts the backend with the `dev` Spring profile, which seeds reusable sample activity posts into the local database
 
 This is the intended fast feedback loop for development because frontend changes hot-reload immediately and backend changes do not require rebuilding a Docker image first.
 

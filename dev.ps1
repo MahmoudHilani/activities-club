@@ -89,7 +89,7 @@ function Assert-PortAvailableForDockerDb {
             continue
         }
 
-        if ($process.ProcessName -in @("com.docker.backend", "docker-proxy")) {
+        if ($process.ProcessName -in @("com.docker.backend", "docker-proxy", "wslrelay")) {
             continue
         }
 
@@ -210,6 +210,7 @@ Start-DevWindow `
         "JWT_SECRET" = $jwtSecret
         "JWT_EXPIRATION_MS" = $jwtExpirationMs
         "UPLOADS_DIR" = $uploadsDir
+        "SPRING_PROFILES_ACTIVE" = "dev"
     } `
     -Command ".\mvnw.cmd spring-boot:run" `
     -PidFile (Join-Path $devDir "backend.pid")

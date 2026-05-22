@@ -148,12 +148,13 @@ const isAdminUsersRoute = computed(() => route.path.startsWith('/admin/users'))
   position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 10px 14px;
+  padding: 10px 14px 14px;
   border-radius: 999px;
   color: var(--primary);
   text-decoration: none;
   font-weight: 600;
   font-size: 14px;
+  line-height: 1;
   transition: background 0.15s ease;
 }
 .nav-link:hover {
@@ -167,8 +168,8 @@ const isAdminUsersRoute = computed(() => route.path.startsWith('/admin/users'))
   position: absolute;
   left: 12px;
   right: 12px;
-  bottom: 2px;
-  height: 6px;
+  bottom: 4px;
+  height: 8px;
   background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 8' width='80' height='8'><path d='M2 5 Q 14 1, 28 5 T 54 5 T 78 5' stroke='%23ff7a59' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>")
     repeat-x;
   background-size: 80px 8px;
