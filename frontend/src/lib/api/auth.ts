@@ -16,6 +16,13 @@ export interface RegisterPayload {
   password: string
 }
 
+export interface RegistrationAppealPayload {
+  username: string
+  userType: UserType
+  studentNumber: string | null
+  phoneNumber: string | null
+}
+
 export async function login(payload: LoginPayload): Promise<AuthResponse> {
   const { data } = await apiClient.post<AuthResponse>('/api/auth/login', payload)
   return data
@@ -23,6 +30,18 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
 
 export async function register(payload: RegisterPayload): Promise<RegistrationResponse> {
   const { data } = await apiClient.post<RegistrationResponse>('/api/auth/register', payload)
+  return data
+}
+
+export async function submitRegistrationAppeal(
+  payload: RegistrationAppealPayload,
+  appealToken: string,
+): Promise<RegistrationResponse> {
+  const { data } = await apiClient.patch<RegistrationResponse>('/api/auth/appeal', payload, {
+    headers: {
+      Authorization: `Bearer ${appealToken}`,
+    },
+  })
   return data
 }
 

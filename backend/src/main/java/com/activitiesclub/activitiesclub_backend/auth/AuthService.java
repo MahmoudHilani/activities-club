@@ -15,11 +15,12 @@ import com.activitiesclub.activitiesclub_backend.dto.AuthResponse;
 import com.activitiesclub.activitiesclub_backend.dto.LoginRequest;
 import com.activitiesclub.activitiesclub_backend.dto.RegisterRequest;
 import com.activitiesclub.activitiesclub_backend.dto.RegistrationResponse;
+import com.activitiesclub.activitiesclub_backend.dto.SubmitRegistrationAppealRequest;
+import io.jsonwebtoken.JwtException;
 
 @Service
 public class AuthService {
     private static final String PENDING_APPROVAL_MESSAGE = "Your registration is awaiting admin approval.";
-    private static final String DENIED_APPROVAL_MESSAGE = "Your registration request was denied. Please contact an admin before trying again.";
     private static final String REGISTRATION_SUBMITTED_MESSAGE = "Registration submitted for admin approval.";
 
     private final UserRepository users;
@@ -37,25 +38,20 @@ public class AuthService {
         String normalizedUsername = normalizeUsername(req.username());
         String normalizedStudentNumber = normalizeField(req.studentNumber());
         String normalizedPhoneNumber = normalizeField(req.phoneNumber());
-        User reusableDeniedUser = null;
-
         User existingUserByEmail = users.findByEmailIgnoreCase(normalizedEmail).orElse(null);
         if (existingUserByEmail != null) {
-            if (existingUserByEmail.getApprovalStatus() != ApprovalStatus.DENIED) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already used");
+            if (existingUserByEmail.getApprovalStatus() == ApprovalStatus.DENIED) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Denied registrations must be appealed from login");
             }
 
-            reusableDeniedUser = existingUserByEmail;
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already used");
         }
-        boolean usernameInUse = reusableDeniedUser == null
-            ? users.existsByUsernameIgnoreCase(normalizedUsername)
-            : users.existsByUsernameIgnoreCaseAndIdNot(normalizedUsername, reusableDeniedUser.getId());
-        if (usernameInUse) {
+        if (users.existsByUsernameIgnoreCase(normalizedUsername)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already used");
         }
 
         String hash = encoder.encode(req.password());
-        User user = reusableDeniedUser != null ? reusableDeniedUser : new User();
+        User user = new User();
         user.setUsername(normalizedUsername);
         user.setEmail(normalizedEmail);
         user.setUserType(req.userType());
@@ -78,11 +74,57 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, PENDING_APPROVAL_MESSAGE);
         }
         if (user.getApprovalStatus() == ApprovalStatus.DENIED) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, DENIED_APPROVAL_MESSAGE);
+            return new AuthResponse(null, jwtService.generateAppeal(user));
         }
         
         String token = jwtService.generate(user);
-        return new AuthResponse(token);
+        return new AuthResponse(token, null);
+    }
+
+    public RegistrationResponse submitAppeal(String authorizationHeader, SubmitRegistrationAppealRequest req) {
+        String token = bearerToken(authorizationHeader);
+        Long userId;
+        try {
+            userId = jwtService.extractAppealUserId(token);
+        } catch (JwtException exception) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid appeal token");
+        }
+
+        User user = users.findById(userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid appeal token"));
+        if (user.getApprovalStatus() != ApprovalStatus.DENIED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only denied registrations can be appealed");
+        }
+
+        String normalizedUsername = normalizeUsername(req.username());
+        if (users.existsByUsernameIgnoreCaseAndIdNot(normalizedUsername, userId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already used");
+        }
+
+        user.setUsername(normalizedUsername);
+        user.setUserType(req.userType());
+        user.setStudentNumber(resolveStudentNumber(req.userType(), normalizeField(req.studentNumber())));
+        user.setPhoneNumber(resolvePhoneNumber(req.userType(), normalizeField(req.phoneNumber())));
+        if (req.userType() == UserType.STAFF) {
+            user.setDateOfBirth(null);
+        }
+        user.setAdmin(false);
+        user.setApprovalStatus(ApprovalStatus.PENDING);
+        users.save(user);
+        return new RegistrationResponse(ApprovalStatus.PENDING, REGISTRATION_SUBMITTED_MESSAGE);
+    }
+
+    private String bearerToken(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Appeal token required");
+        }
+
+        String token = authorizationHeader.substring(7).trim();
+        if (token.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Appeal token required");
+        }
+
+        return token;
     }
 
     private String normalizeEmail(String email) {

@@ -44,7 +44,12 @@ const onSubmit = handleSubmit(async (values) => {
   serverError.value = ''
 
   try {
-    await sessionStore.login(values)
+    const destination = await sessionStore.login(values)
+    if (destination === 'appeal') {
+      await router.push({ name: 'registration-appeal' })
+      return
+    }
+
     await router.push(resolveRedirectPath(route.query.redirect))
   } catch (error) {
     serverError.value = mapLoginError(error)

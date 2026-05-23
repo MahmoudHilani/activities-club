@@ -1,5 +1,6 @@
 export interface AuthResponse {
-  token: string
+  token: string | null
+  appealToken: string | null
 }
 
 export type UserType = 'STUDENT' | 'STAFF'

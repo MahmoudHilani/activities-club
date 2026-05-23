@@ -1,5 +1,3 @@
 package com.activitiesclub.activitiesclub_backend.dto;
 
-public record AuthResponse(String token) {
-    
-}
+public record AuthResponse(String token, String appealToken) {}

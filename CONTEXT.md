@@ -20,6 +20,14 @@ _Avoid_: Missing age, assumed adult
 An activity that includes an overnight stay.
 _Avoid_: Overnight trip, adult-only activity
 
+**Denied Registration**:
+A registration refused by an admin that may return for review only through an appeal by the same person.
+_Avoid_: Rejected user, blocked account
+
+**Registration Appeal**:
+A denied person's request to update their registration details and return the registration for admin review.
+_Avoid_: Re-registration, reopen signup
+
 ## Relationships
 
 - A **Date of Birth** is the source fact for deciding whether a student is an **Underage Student**.
@@ -27,6 +35,10 @@ _Avoid_: Overnight trip, adult-only activity
 - An **Underage Student** must not hold an active reservation or waitlist place for an **Overnight Activity**.
 - An **Overnight Activity** is identified by an explicit admin decision, not inferred from start or end times.
 - A **Date of Birth** may be recorded during approval or later from user management.
+- A recorded **Date of Birth** remains on a student **Denied Registration** that returns for review, but not when its **Registration Appeal** changes it to staff.
+- A **Denied Registration** returns for review only through a **Registration Appeal**, not by a new registration or by an admin reversing denial.
+- A **Registration Appeal** requires the denied person to prove control of the existing registration.
+- A **Registration Appeal** updates registration details, not account credentials.
 
 ## Example dialogue
 
@@ -37,3 +49,7 @@ _Avoid_: Overnight trip, adult-only activity
 
 - "underage" was used as a stable student attribute, but it is date-relative; resolved as **Underage Student** evaluated on the activity start date.
 - "missing date of birth" was treated as underage; resolved as **Unknown Date of Birth**, which does not block overnight reservations.
+- "reopen denied" suggested an admin action; resolved as a **Denied Registration** returning for review only through a **Registration Appeal**.
+- "denial clears date of birth" was left implicit; resolved: a recorded **Date of Birth** remains for a returning student registration and is removed when an appeal changes it to staff.
+- "re-register after denial" suggested a new signup; resolved as a **Registration Appeal** by the same denied person.
+- "appeal" could include credential recovery; resolved: a **Registration Appeal** updates registration details only.

@@ -3,12 +3,23 @@ import type { DateValue } from 'reka-ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { CalendarDate, parseDate } from '@internationalized/date'
 import { format } from 'date-fns'
-import { CalendarDays, Shield, ShieldOff, UserRoundX, UserRoundCheck } from 'lucide-vue-next'
+import {
+  CalendarDays,
+  LoaderCircle,
+  MoreHorizontal,
+  Search,
+  Shield,
+  ShieldOff,
+  UserRoundCheck,
+  UserRoundX,
+  X,
+} from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
+import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Select,
@@ -24,12 +35,26 @@ import {
   updateUserApprovalStatus,
   updateUserDateOfBirth,
 } from '@/lib/api/users'
-import type { ApprovalStatus, UserResponse } from '@/lib/api/types'
+import type { ApprovalStatus, UserResponse, UserType } from '@/lib/api/types'
+import { cn } from '@/lib/utils'
 import { useSessionStore } from '@/stores/session'
+
+type StatusFilter = 'ALL' | ApprovalStatus
+type TypeFilter = 'ALL' | UserType
+type SortKey = 'pending-first' | 'created-desc' | 'created-asc' | 'username-asc'
+type ConfirmIntent =
+  | { kind: 'grant-admin' | 'remove-admin'; user: UserResponse }
+  | { kind: 'deny'; user: UserResponse }
 
 const queryClient = useQueryClient()
 const sessionStore = useSessionStore()
 const actionError = ref('')
+
+const searchTerm = ref('')
+const statusFilter = ref<StatusFilter>('PENDING')
+const typeFilter = ref<TypeFilter>('ALL')
+const sortKey = ref<SortKey>('pending-first')
+const confirmIntent = ref<ConfirmIntent | null>(null)
 
 const dateOfBirthByUserId = ref<Record<number, string>>({})
 const dateOfBirthPlaceholderByUserId = ref<Record<number, CalendarDate>>({})
@@ -64,40 +89,86 @@ const usersQuery = useQuery(() => ({
   queryFn: () => getAdminUsers(),
 }))
 
-const users = computed(() =>
-  [...(usersQuery.data.value ?? [])].sort((left, right) => {
-    const approvalOrder = (status: ApprovalStatus) => (status === 'PENDING' ? 0 : 1)
-    const orderDifference = approvalOrder(left.approvalStatus) - approvalOrder(right.approvalStatus)
+const users = computed(() => usersQuery.data.value ?? [])
 
-    if (orderDifference !== 0) {
-      return orderDifference
-    }
-
-    return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
-  }),
-)
-
-const summaryStats = computed(() => {
-  const list = usersQuery.data.value ?? []
-  return [
-    { label: 'Total', value: list.length, tone: 'ink' as const },
-    {
-      label: 'Pending',
-      value: list.filter((u) => u.approvalStatus === 'PENDING').length,
-      tone: 'ochre' as const,
-    },
-    {
-      label: 'Approved',
-      value: list.filter((u) => u.approvalStatus === 'APPROVED').length,
-      tone: 'leaf' as const,
-    },
-    {
-      label: 'Denied',
-      value: list.filter((u) => u.approvalStatus === 'DENIED').length,
-      tone: 'coral' as const,
-    },
-  ]
+const counts = computed(() => {
+  const list = users.value
+  return {
+    all: list.length,
+    pending: list.filter((user) => user.approvalStatus === 'PENDING').length,
+    approved: list.filter((user) => user.approvalStatus === 'APPROVED').length,
+    denied: list.filter((user) => user.approvalStatus === 'DENIED').length,
+  }
 })
+
+const filterChips = computed(() => [
+  { key: 'ALL' as const, label: 'All', count: counts.value.all, tone: 'ink' as const },
+  {
+    key: 'PENDING' as const,
+    label: 'Pending',
+    count: counts.value.pending,
+    tone: 'ochre' as const,
+  },
+  {
+    key: 'APPROVED' as const,
+    label: 'Approved',
+    count: counts.value.approved,
+    tone: 'leaf' as const,
+  },
+  {
+    key: 'DENIED' as const,
+    label: 'Denied',
+    count: counts.value.denied,
+    tone: 'coral' as const,
+  },
+])
+
+const filteredUsers = computed(() => {
+  const term = searchTerm.value.trim().toLowerCase()
+  let list = users.value.slice()
+
+  if (statusFilter.value !== 'ALL') {
+    list = list.filter((user) => user.approvalStatus === statusFilter.value)
+  }
+
+  if (typeFilter.value !== 'ALL') {
+    list = list.filter((user) => user.userType === typeFilter.value)
+  }
+
+  if (term) {
+    list = list.filter((user) =>
+      [user.username, user.email, user.studentNumber, user.phoneNumber].some((value) =>
+        (value ?? '').toLowerCase().includes(term),
+      ),
+    )
+  }
+
+  switch (sortKey.value) {
+    case 'pending-first':
+      list.sort((left, right) => {
+        const statusDifference =
+          pendingRank(left.approvalStatus) - pendingRank(right.approvalStatus)
+        return statusDifference || compareDates(right.createdAt, left.createdAt)
+      })
+      break
+    case 'created-desc':
+      list.sort((left, right) => compareDates(right.createdAt, left.createdAt))
+      break
+    case 'created-asc':
+      list.sort((left, right) => compareDates(left.createdAt, right.createdAt))
+      break
+    case 'username-asc':
+      list.sort((left, right) => left.username.localeCompare(right.username))
+      break
+  }
+
+  return list
+})
+
+const approvedAdminCount = computed(
+  () =>
+    users.value.filter((user) => user.approvalStatus === 'APPROVED' && user.isAdmin).length,
+)
 
 watch(
   () => usersQuery.data.value,
@@ -112,12 +183,6 @@ watch(
   },
   { immediate: true },
 )
-
-function replaceCachedUser(updatedUser: UserResponse): void {
-  queryClient.setQueryData<UserResponse[]>(['admin-users'], (currentUsers = []) =>
-    currentUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user)),
-  )
-}
 
 const adminToggleMutation = useMutation(() => ({
   mutationFn: ({ userId, isAdmin }: { userId: number; isAdmin: boolean }) =>
@@ -169,39 +234,91 @@ const dateOfBirthMutation = useMutation(() => ({
   },
 }))
 
-function isCurrentUser(user: UserResponse): boolean {
-  return sessionStore.user?.id === user.id
+function replaceCachedUser(updatedUser: UserResponse): void {
+  queryClient.setQueryData<UserResponse[]>(['admin-users'], (currentUsers = []) =>
+    currentUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user)),
+  )
 }
 
-function toggleAdminAccess(user: UserResponse): void {
-  adminToggleMutation.mutate({
-    userId: user.id,
-    isAdmin: !user.isAdmin,
-  })
+function requestAdminToggle(user: UserResponse): void {
+  confirmIntent.value = {
+    kind: user.isAdmin ? 'remove-admin' : 'grant-admin',
+    user,
+  }
+}
+
+function requestDeny(user: UserResponse): void {
+  confirmIntent.value = { kind: 'deny', user }
+}
+
+function dismissConfirm(): void {
+  confirmIntent.value = null
+}
+
+async function executeConfirm(): Promise<void> {
+  const intent = confirmIntent.value
+  if (!intent) {
+    return
+  }
+
+  if (intent.kind === 'deny') {
+    await updateApprovalStatus(intent.user, 'DENIED')
+  } else {
+    await adminToggleMutation.mutateAsync({
+      userId: intent.user.id,
+      isAdmin: intent.kind === 'grant-admin',
+    })
+  }
+
+  dismissConfirm()
 }
 
 function updateApprovalStatus(
   user: UserResponse,
   approvalStatus: Exclude<ApprovalStatus, 'PENDING'>,
-): void {
+): Promise<UserResponse> {
   const dateOfBirth =
     approvalStatus === 'APPROVED' && user.userType === 'STUDENT'
       ? (dateOfBirthByUserId.value[user.id] ?? '').trim() || null
       : null
 
-  approvalMutation.mutate({
+  return approvalMutation.mutateAsync({
     userId: user.id,
     approvalStatus,
     dateOfBirth,
   })
 }
 
+function canRemoveAdmin(user: UserResponse): boolean {
+  return !user.isAdmin || approvedAdminCount.value > 1
+}
+
+function adminDisabledReason(user: UserResponse): string {
+  if (isCurrentUser(user)) {
+    return 'You'
+  }
+
+  if (!canRemoveAdmin(user)) {
+    return 'Only admin remaining'
+  }
+
+  return ''
+}
+
+function isCurrentUser(user: UserResponse): boolean {
+  return sessionStore.user?.id === user.id
+}
+
 function contactValue(value: string | null): string {
   return value ?? 'Not provided'
 }
 
-function canApprove(_user: UserResponse): boolean {
-  return !approvalMutation.isPending.value
+function pendingRank(status: ApprovalStatus): number {
+  return status === 'PENDING' ? 0 : 1
+}
+
+function compareDates(a: string, b: string): number {
+  return new Date(a).getTime() - new Date(b).getTime()
 }
 
 function approvalTone(status: ApprovalStatus): 'leaf' | 'ochre' | 'coral' {
@@ -216,14 +333,7 @@ function approvalTone(status: ApprovalStatus): 'leaf' | 'ochre' | 'coral' {
 }
 
 function approvalLabel(status: ApprovalStatus): string {
-  switch (status) {
-    case 'APPROVED':
-      return 'approved'
-    case 'PENDING':
-      return 'pending'
-    case 'DENIED':
-      return 'denied'
-  }
+  return status.toLowerCase()
 }
 
 function updateDateOfBirthFromCalendar(user: UserResponse, nextDate: DateValue | undefined): void {
@@ -318,17 +428,19 @@ function getDateOfBirthDisplay(user: UserResponse): string {
 </script>
 
 <template>
-  <section class="users-shell">
-    <header class="users-hero">
-      <h1 class="users-title">
-        <span class="display-text">The</span>
-        <span class="hand-text"> people </span>
-        <span class="display-text">behind the club</span>
-      </h1>
-      <p class="users-lede">
-        Approve newcomers, grant admin access, and keep dates of birth on file for overnight
-        eligibility.
-      </p>
+  <section class="proto-shell">
+    <header class="proto-hero">
+      <div class="proto-hero-text">
+        <h1 class="proto-title">
+          <span class="display-text">The</span>
+          <span class="hand-text"> people </span>
+          <span class="display-text">desk</span>
+        </h1>
+        <p class="proto-lede">
+          Review pending registrations, keep student dates of birth current, and grant admin
+          access with explicit confirmation.
+        </p>
+      </div>
     </header>
 
     <Alert v-if="usersQuery.isError.value" variant="destructive">
@@ -339,469 +451,735 @@ function getDateOfBirthDisplay(user: UserResponse): string {
       {{ actionError }}
     </Alert>
 
-    <div class="stat-grid">
-      <div
-        v-for="card in summaryStats"
-        :key="card.label"
-        class="stat-card"
-        :class="`stat-${card.tone}`"
-      >
-        <p class="stat-label">{{ card.label }}</p>
-        <p class="stat-value">{{ card.value }}</p>
+    <div class="proto-toolbar">
+      <div class="proto-search">
+        <Search class="proto-search-icon h-4 w-4" />
+        <Input
+          v-model="searchTerm"
+          aria-label="Search users"
+          class="proto-search-input"
+          placeholder="Search username, email, student #, phone..."
+          type="search"
+        />
+        <button
+          v-if="searchTerm"
+          class="proto-search-clear"
+          aria-label="Clear search"
+          @click="searchTerm = ''"
+        >
+          <X class="h-4 w-4" />
+        </button>
+      </div>
+
+      <div class="proto-type-filter" aria-label="Filter by user type">
+        <button
+          :class="cn('proto-type-chip', typeFilter === 'ALL' && 'proto-type-chip-active')"
+          @click="typeFilter = 'ALL'"
+        >
+          All types
+        </button>
+        <button
+          :class="cn('proto-type-chip', typeFilter === 'STUDENT' && 'proto-type-chip-active')"
+          @click="typeFilter = 'STUDENT'"
+        >
+          Students
+        </button>
+        <button
+          :class="cn('proto-type-chip', typeFilter === 'STAFF' && 'proto-type-chip-active')"
+          @click="typeFilter = 'STAFF'"
+        >
+          Staff
+        </button>
+      </div>
+
+      <div class="proto-sort">
+        <label class="proto-sort-label">Sort</label>
+        <Select v-model="sortKey">
+          <SelectTrigger class="proto-sort-trigger">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending-first">Pending first</SelectItem>
+            <SelectItem value="created-desc">Most recent</SelectItem>
+            <SelectItem value="created-asc">Oldest first</SelectItem>
+            <SelectItem value="username-asc">Username A-Z</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
 
-    <div v-if="usersQuery.isPending.value" class="state-card">
-      Loading user management…
+    <div class="proto-chips" role="tablist" aria-label="Filter by approval status">
+      <button
+        v-for="chip in filterChips"
+        :key="chip.key"
+        role="tab"
+        :aria-selected="statusFilter === chip.key"
+        :class="
+          cn(
+            'proto-chip',
+            `proto-chip-${chip.tone}`,
+            statusFilter === chip.key && 'proto-chip-active',
+          )
+        "
+        @click="statusFilter = chip.key"
+      >
+        <span>{{ chip.label }}</span>
+        <span class="proto-chip-count">{{ chip.count }}</span>
+      </button>
     </div>
 
-    <div v-else-if="users.length === 0" class="empty-card">
-      <h2 class="empty-title">
+    <div v-if="usersQuery.isPending.value" class="proto-state">
+      <LoaderCircle class="h-5 w-5 animate-spin" />
+      <span>Loading user management...</span>
+    </div>
+
+    <div v-else-if="users.length === 0" class="proto-state proto-state-empty">
+      <p class="proto-state-title">
         <span class="display-text">Nobody's</span>
         <span class="hand-text"> signed up yet</span>
-      </h2>
-      <p class="empty-sub">When students or staff register, you'll see them appear here.</p>
+      </p>
+      <p class="proto-state-sub">When students or staff register, they will appear here.</p>
     </div>
 
-    <div v-else class="user-list">
-      <article v-for="user in users" :key="user.id" class="user-card">
-        <div class="user-card-inner">
-          <div class="user-info">
-            <div class="user-headline">
-              <h2 class="user-name">{{ user.username }}</h2>
-              <span
-                class="craft-tag"
-                :class="`craft-tag-${approvalTone(user.approvalStatus)}`"
-              >
-                {{ approvalLabel(user.approvalStatus) }}
-              </span>
-              <span
-                v-if="user.userType === 'STAFF'"
-                class="craft-pill"
-              >Staff</span>
-            </div>
+    <div v-else-if="filteredUsers.length === 0" class="proto-state proto-state-empty">
+      <p class="proto-state-title">
+        <span class="display-text">Nothing</span>
+        <span class="hand-text"> matches</span>
+      </p>
+      <p class="proto-state-sub">Try a different search or choose another status.</p>
+    </div>
 
-            <dl class="user-fields">
-              <div class="user-field">
-                <dt>Email</dt>
-                <dd>{{ user.email }}</dd>
-              </div>
-              <div class="user-field">
-                <dt>Student #</dt>
-                <dd>{{ contactValue(user.studentNumber) }}</dd>
-              </div>
-              <div class="user-field">
-                <dt>Phone</dt>
-                <dd>{{ contactValue(user.phoneNumber) }}</dd>
-              </div>
-              <div v-if="user.userType !== 'STUDENT'" class="user-field">
-                <dt>Date of birth</dt>
-                <dd>{{ contactValue(user.dateOfBirth) }}</dd>
-              </div>
-            </dl>
+    <div v-else class="proto-table">
+      <div class="proto-row proto-row-head" aria-hidden="true">
+        <span>User</span>
+        <span>Contact</span>
+        <span>Date of birth</span>
+        <span></span>
+      </div>
+
+      <article v-for="user in filteredUsers" :key="user.id" class="proto-row proto-row-data">
+        <div class="proto-col-user">
+          <div class="proto-title-line">
+            <h2 class="proto-user-name">{{ user.username }}</h2>
+            <span class="proto-status" :class="`proto-status-${approvalTone(user.approvalStatus)}`">
+              {{ approvalLabel(user.approvalStatus) }}
+            </span>
+            <span v-if="user.userType === 'STAFF'" class="proto-staff-pill">Staff</span>
           </div>
+          <p v-if="adminDisabledReason(user)" class="proto-row-note">
+            {{ adminDisabledReason(user) }}
+          </p>
+        </div>
 
-          <div class="user-actions">
-            <div v-if="user.userType === 'STUDENT'" class="dob-block">
-              <span class="dob-label">Date of birth</span>
-              <Popover v-model:open="dateOfBirthPopoverOpenByUserId[user.id]">
-                <PopoverTrigger as-child>
-                  <Button
-                    :aria-label="`Date of birth for ${user.username}`"
-                    :disabled="dateOfBirthMutation.isPending.value"
-                    class="dob-trigger"
-                    variant="outline"
+        <div class="proto-col-contact">
+          <span>{{ user.email }}</span>
+          <span>Student #: {{ contactValue(user.studentNumber) }}</span>
+          <span>Phone: {{ contactValue(user.phoneNumber) }}</span>
+        </div>
+
+        <div class="proto-col-dob">
+          <template v-if="user.userType === 'STUDENT' && user.approvalStatus !== 'DENIED'">
+            <Popover v-model:open="dateOfBirthPopoverOpenByUserId[user.id]">
+              <PopoverTrigger as-child>
+                <Button
+                  :aria-label="`Date of birth for ${user.username}`"
+                  :disabled="dateOfBirthMutation.isPending.value"
+                  class="dob-trigger"
+                  variant="outline"
+                >
+                  <CalendarDays class="h-4 w-4" />
+                  <span :class="dateOfBirthByUserId[user.id] ? 'dob-has' : 'dob-empty'">
+                    {{ getDateOfBirthDisplay(user) }}
+                  </span>
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent align="end" class="w-[min(22rem,calc(100vw-2rem))] p-0">
+                <div class="grid grid-cols-2 gap-2 border-b border-border/70 p-3">
+                  <Select
+                    :model-value="String(getDateOfBirthPlaceholder(user.id).month)"
+                    @update:model-value="
+                      (value) => updateDateOfBirthMonth(user.id, String(value ?? ''))
+                    "
                   >
-                    <span class="dob-trigger-inner">
-                      <CalendarDays class="h-4 w-4" />
-                      <span
-                        :class="
-                          dateOfBirthByUserId[user.id] ? 'dob-trigger-has' : 'dob-trigger-empty'
-                        "
+                    <SelectTrigger class="h-10 rounded-xl">
+                      <SelectValue placeholder="Month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="month in monthOptions"
+                        :key="month.value"
+                        :value="month.value"
                       >
-                        {{ getDateOfBirthDisplay(user) }}
-                      </span>
-                    </span>
-                  </Button>
-                </PopoverTrigger>
+                        {{ month.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
 
-                <PopoverContent align="end" class="w-[min(22rem,calc(100vw-2rem))] p-0">
-                  <div class="grid grid-cols-2 gap-2 border-b border-border/70 p-3">
-                    <Select
-                      :model-value="String(getDateOfBirthPlaceholder(user.id).month)"
-                      @update:model-value="
-                        (value) => updateDateOfBirthMonth(user.id, String(value ?? ''))
-                      "
-                    >
-                      <SelectTrigger class="h-10 rounded-xl">
-                        <SelectValue placeholder="Month" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem
-                          v-for="month in monthOptions"
-                          :key="month.value"
-                          :value="month.value"
-                        >
-                          {{ month.label }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Select
-                      :model-value="String(getDateOfBirthPlaceholder(user.id).year)"
-                      @update:model-value="
-                        (value) => updateDateOfBirthYear(user.id, String(value ?? ''))
-                      "
-                    >
-                      <SelectTrigger class="h-10 rounded-xl">
-                        <SelectValue placeholder="Year" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem v-for="year in yearOptions" :key="year" :value="year">
-                          {{ year }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div class="p-3 pb-2">
-                    <Calendar
-                      :calendar-label="`Choose date of birth for ${user.username}`"
-                      :max-value="maxDateOfBirth"
-                      :min-value="minDateOfBirth"
-                      :model-value="getDateOfBirthCalendarValue(user.id) ?? undefined"
-                      :placeholder="getDateOfBirthPlaceholder(user.id)"
-                      @update:model-value="(date) => updateDateOfBirthFromCalendar(user, date)"
-                      @update:placeholder="(date) => updateDateOfBirthPlaceholder(user.id, date)"
-                    />
-                  </div>
-
-                  <div
-                    v-if="dateOfBirthByUserId[user.id]"
-                    class="flex justify-end border-t border-border/70 px-4 py-3"
+                  <Select
+                    :model-value="String(getDateOfBirthPlaceholder(user.id).year)"
+                    @update:model-value="
+                      (value) => updateDateOfBirthYear(user.id, String(value ?? ''))
+                    "
                   >
-                    <Button
-                      class="h-8 rounded-full px-3 text-muted-foreground shadow-none"
-                      size="sm"
-                      variant="ghost"
-                      @click="clearDateOfBirth(user)"
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
+                    <SelectTrigger class="h-10 rounded-xl">
+                      <SelectValue placeholder="Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="year in yearOptions" :key="year" :value="year">
+                        {{ year }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <template v-if="user.approvalStatus === 'PENDING'">
-              <Button
-                :disabled="!canApprove(user)"
-                class="user-action"
-                size="sm"
-                @click="updateApprovalStatus(user, 'APPROVED')"
-              >
-                <UserRoundCheck class="h-4 w-4" />
-                Approve
-              </Button>
-              <Button
-                :disabled="approvalMutation.isPending.value"
-                class="user-action"
-                size="sm"
-                variant="outline"
-                @click="updateApprovalStatus(user, 'DENIED')"
-              >
-                <UserRoundX class="h-4 w-4" />
-                Deny
-              </Button>
-            </template>
+                <div class="p-3 pb-2">
+                  <Calendar
+                    :calendar-label="`Choose date of birth for ${user.username}`"
+                    :max-value="maxDateOfBirth"
+                    :min-value="minDateOfBirth"
+                    :model-value="getDateOfBirthCalendarValue(user.id) ?? undefined"
+                    :placeholder="getDateOfBirthPlaceholder(user.id)"
+                    @update:model-value="(date) => updateDateOfBirthFromCalendar(user, date)"
+                    @update:placeholder="(date) => updateDateOfBirthPlaceholder(user.id, date)"
+                  />
+                </div>
 
+                <div
+                  v-if="dateOfBirthByUserId[user.id]"
+                  class="flex justify-end border-t border-border/70 px-4 py-3"
+                >
+                  <Button
+                    class="h-8 rounded-full px-3 text-muted-foreground shadow-none"
+                    size="sm"
+                    variant="ghost"
+                    @click="clearDateOfBirth(user)"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </template>
+          <span v-else-if="user.approvalStatus === 'DENIED'" class="proto-denied-note">
+            Denied - appeal required to return this registration to review.
+          </span>
+        </div>
+
+        <div class="proto-col-actions">
+          <template v-if="user.approvalStatus === 'PENDING'">
             <Button
-              v-else-if="user.approvalStatus === 'APPROVED'"
-              :disabled="adminToggleMutation.isPending.value || isCurrentUser(user)"
-              class="user-action"
+              :disabled="approvalMutation.isPending.value"
+              class="proto-primary-action"
               size="sm"
-              :variant="user.isAdmin ? 'outline' : 'default'"
-              @click="toggleAdminAccess(user)"
+              @click="updateApprovalStatus(user, 'APPROVED')"
             >
-              <ShieldOff v-if="user.isAdmin" class="h-4 w-4" />
-              <Shield v-else class="h-4 w-4" />
-              {{ user.isAdmin ? 'Remove admin' : 'Grant admin' }}
+              <UserRoundCheck class="h-4 w-4" />
+              Approve
             </Button>
 
-            <div v-else class="denied-note">
-              This registration was denied. A fresh signup with the same email will reopen it.
-            </div>
-          </div>
+            <Popover>
+              <PopoverTrigger as-child>
+                <Button
+                  aria-label="More actions"
+                  class="proto-overflow-btn"
+                  size="sm"
+                  variant="outline"
+                >
+                  <MoreHorizontal class="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" class="proto-menu">
+                <button class="proto-menu-item proto-menu-item-danger" @click="requestDeny(user)">
+                  <UserRoundX class="h-4 w-4" />
+                  Deny
+                </button>
+              </PopoverContent>
+            </Popover>
+          </template>
+
+          <Button
+            v-else-if="user.approvalStatus === 'APPROVED'"
+            :disabled="
+              adminToggleMutation.isPending.value ||
+              isCurrentUser(user) ||
+              (user.isAdmin && !canRemoveAdmin(user))
+            "
+            class="proto-primary-action"
+            size="sm"
+            :variant="user.isAdmin ? 'outline' : 'default'"
+            @click="requestAdminToggle(user)"
+          >
+            <ShieldOff v-if="user.isAdmin" class="h-4 w-4" />
+            <Shield v-else class="h-4 w-4" />
+            {{ user.isAdmin ? 'Remove admin' : 'Grant admin' }}
+          </Button>
         </div>
       </article>
+    </div>
+
+    <div
+      v-if="confirmIntent"
+      class="proto-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      @click.self="dismissConfirm"
+    >
+      <div class="proto-modal">
+        <h2 class="proto-modal-title">
+          <template v-if="confirmIntent.kind === 'grant-admin'">
+            Grant admin access?
+          </template>
+          <template v-else-if="confirmIntent.kind === 'remove-admin'">
+            Remove admin access?
+          </template>
+          <template v-else>
+            Deny this registration?
+          </template>
+        </h2>
+        <p class="proto-modal-body">
+          <template v-if="confirmIntent.kind === 'grant-admin'">
+            {{ confirmIntent.user.username }} will become an admin and can see everything in
+            user and activity management.
+          </template>
+          <template v-else-if="confirmIntent.kind === 'remove-admin'">
+            {{ confirmIntent.user.username }} will lose access to admin management screens.
+          </template>
+          <template v-else>
+            {{ confirmIntent.user.username }} will be denied. They will need a registration
+            appeal to return to the pending queue.
+          </template>
+        </p>
+
+        <div class="proto-modal-actions">
+          <Button size="sm" variant="outline" @click="dismissConfirm">Keep reviewing</Button>
+          <Button
+            :disabled="adminToggleMutation.isPending.value || approvalMutation.isPending.value"
+            :variant="confirmIntent.kind === 'deny' ? 'destructive' : 'default'"
+            size="sm"
+            @click="executeConfirm"
+          >
+            <LoaderCircle
+              v-if="adminToggleMutation.isPending.value || approvalMutation.isPending.value"
+              class="h-4 w-4 animate-spin"
+            />
+            <template v-if="confirmIntent.kind === 'grant-admin'">Grant admin access</template>
+            <template v-else-if="confirmIntent.kind === 'remove-admin'">Remove admin access</template>
+            <template v-else>Deny registration</template>
+          </Button>
+        </div>
+      </div>
     </div>
   </section>
 </template>
 
 <style scoped>
-.users-shell {
+.proto-shell {
   display: flex;
-  flex-direction: column;
   flex: 1;
-  gap: 1.75rem;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.users-hero {
+.proto-hero {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
   align-items: flex-start;
-}
-.users-title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(40px, 6vw, 64px);
-  line-height: 0.98;
-  color: var(--primary);
-  letter-spacing: -0.01em;
-}
-.users-title .hand-text {
-  font-size: 1.12em;
-}
-.users-lede {
-  max-width: 60ch;
-  font-size: 16px;
-  color: var(--muted-foreground);
-  line-height: 1.55;
-  margin: 0;
-}
-
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-}
-@media (min-width: 900px) {
-  .stat-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-.stat-card {
-  position: relative;
-  background: white;
-  border: 2px solid var(--primary);
-  border-radius: 22px;
-  padding: 18px;
-}
-.stat-ink {
-  box-shadow: 4px 4px 0 var(--primary);
-}
-.stat-ochre {
-  box-shadow: 4px 4px 0 var(--color-ochre);
-}
-.stat-leaf {
-  box-shadow: 4px 4px 0 var(--color-leaf);
-}
-.stat-coral {
-  box-shadow: 4px 4px 0 var(--color-coral);
-}
-.stat-label {
-  margin: 0;
-  font-family: var(--font-hand);
-  font-weight: 700;
-  font-size: 20px;
-  color: var(--color-coral);
-}
-.stat-ochre .stat-label {
-  color: var(--color-ochre);
-}
-.stat-leaf .stat-label {
-  color: var(--color-leaf);
-}
-.stat-ink .stat-label {
-  color: var(--primary);
-}
-.stat-value {
-  margin: 4px 0 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 42px;
-  line-height: 1;
-  color: var(--primary);
-}
-
-.state-card,
-.empty-card {
-  background: white;
-  border: 2px solid var(--primary);
-  border-radius: 28px;
-  padding: 28px;
-}
-.state-card {
-  border-style: dashed;
-  border-color: color-mix(in srgb, var(--primary) 35%, white);
-  color: var(--muted-foreground);
-  font-weight: 600;
-}
-.empty-card {
-  box-shadow:
-    4px 4px 0 var(--color-coral),
-    8px 8px 0 var(--primary);
-}
-.empty-title {
-  margin: 0 0 8px;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 30px;
-  line-height: 1;
-  color: var(--primary);
-}
-.empty-sub {
-  margin: 0;
-  font-size: 15px;
-  color: var(--muted-foreground);
-  line-height: 1.55;
-}
-
-.user-list {
-  display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   gap: 18px;
 }
-
-.user-card {
-  background: white;
-  border: 2px solid var(--primary);
-  border-radius: 26px;
-  padding: 22px;
-  box-shadow: 4px 4px 0 var(--color-leaf);
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
-}
-.user-card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 7px 7px 0 var(--color-leaf);
-}
-
-.user-card-inner {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 18px;
-}
-@media (min-width: 1024px) {
-  .user-card-inner {
-    grid-template-columns: 1fr 16rem;
-  }
-}
-
-.user-info {
+.proto-hero-text {
   display: flex;
+  min-width: 280px;
+  flex: 1;
   flex-direction: column;
-  gap: 12px;
-  min-width: 0;
+  gap: 8px;
 }
-.user-headline {
+.proto-title {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-.user-name {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 26px;
-  line-height: 1.05;
-  color: var(--primary);
-  word-break: break-word;
-}
-
-.user-fields {
-  display: grid;
-  grid-template-columns: 1fr;
+  align-items: baseline;
   gap: 8px;
   margin: 0;
-}
-@media (min-width: 640px) {
-  .user-fields {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-.user-field {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 12px;
-  background: color-mix(in srgb, white 92%, #f4efe4 8%);
-  border: 1.5px solid color-mix(in srgb, var(--primary) 18%, white);
-  border-radius: 14px;
-}
-.user-field dt {
-  font-family: var(--font-hand);
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--color-coral);
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 400;
   line-height: 1;
 }
-.user-field dd {
-  margin: 4px 0 0;
-  font-size: 14px;
-  color: var(--primary);
-  font-weight: 600;
-  word-break: break-word;
+.proto-title .hand-text {
+  font-size: 1.12em;
+}
+.proto-lede {
+  max-width: 64ch;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 15px;
+  line-height: 1.5;
 }
 
-.user-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.proto-toolbar {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
-.user-action {
-  width: 100%;
+@media (min-width: 900px) {
+  .proto-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+  }
+}
+.proto-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.proto-search-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+.proto-search-input {
+  padding-right: 40px;
+  padding-left: 40px;
+}
+.proto-search-clear {
+  position: absolute;
+  right: 12px;
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
   justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.proto-type-filter,
+.proto-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.proto-type-chip {
+  border: 2px solid color-mix(in srgb, var(--primary) 22%, white);
+  border-radius: 999px;
+  background: white;
+  color: var(--primary);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.proto-type-chip-active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+}
+.proto-sort-label {
+  color: var(--primary);
+  font-family: var(--font-hand);
+  font-size: 16px;
+  font-weight: 700;
+}
+.proto-sort-trigger {
+  min-width: 190px;
 }
 
-.dob-block {
+.proto-chips {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 4px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
-.dob-label {
-  font-family: var(--font-hand);
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--color-coral);
-}
-.dob-trigger {
-  height: 2.75rem;
-  width: 100%;
-  justify-content: flex-start;
-  font-weight: 600;
-}
-.dob-trigger-inner {
+.proto-chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
-}
-.dob-trigger-inner svg {
-  color: var(--color-coral);
-  flex-shrink: 0;
-}
-.dob-trigger-has {
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  background: white;
   color: var(--primary);
+  padding: 8px 14px;
+  font-family: var(--font-hand);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
 }
-.dob-trigger-empty {
+.proto-chip-count {
+  display: inline-flex;
+  min-width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  padding: 0 6px;
+  font-size: 12px;
+}
+.proto-chip-active {
+  background: var(--primary);
+  color: white;
+  box-shadow: 3px 3px 0 var(--color-coral);
+}
+.proto-chip-active .proto-chip-count {
+  background: color-mix(in srgb, white 25%, transparent);
+  color: white;
+}
+.proto-chip-ochre.proto-chip-active {
+  border-color: var(--color-ochre);
+  background: var(--color-ochre);
+}
+.proto-chip-leaf.proto-chip-active {
+  border-color: var(--color-leaf);
+  background: var(--color-leaf);
+}
+.proto-chip-coral.proto-chip-active {
+  border-color: var(--color-coral);
+  background: var(--color-coral);
+}
+
+.proto-state {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 2px dashed color-mix(in srgb, var(--primary) 35%, white);
+  border-radius: 22px;
+  background: white;
+  color: var(--muted-foreground);
+  padding: 28px;
+  font-weight: 600;
+}
+.proto-state-empty {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 6px;
+}
+.proto-state-title {
+  margin: 0;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 400;
+}
+.proto-state-sub {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 14.5px;
+}
+
+.proto-table {
+  overflow: hidden;
+  border: 2px solid var(--primary);
+  border-radius: 22px;
+  background: white;
+  box-shadow: 5px 5px 0 var(--color-coral);
+}
+.proto-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 12%, transparent);
+  padding: 14px 18px;
+}
+.proto-row:last-child {
+  border-bottom: 0;
+}
+.proto-row-head {
+  display: none;
+  background: color-mix(in srgb, var(--primary) 5%, white);
+  color: var(--muted-foreground);
+  font-family: var(--font-hand);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+@media (min-width: 980px) {
+  .proto-row {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) minmax(12rem, 0.8fr) auto;
+    align-items: center;
+    gap: 16px;
+  }
+  .proto-row-head {
+    display: grid;
+    padding: 10px 18px;
+  }
+}
+.proto-title-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.proto-user-name {
+  margin: 0;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+.proto-status,
+.proto-staff-pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1.5px solid var(--primary);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-family: var(--font-hand);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.proto-staff-pill {
+  background: color-mix(in srgb, var(--primary) 10%, white);
+  text-transform: none;
+}
+.proto-status-leaf {
+  border-color: var(--color-leaf);
+  background: color-mix(in srgb, var(--color-leaf) 18%, white);
+  color: color-mix(in srgb, var(--color-leaf) 60%, var(--primary));
+}
+.proto-status-ochre {
+  border-color: var(--color-ochre);
+  background: color-mix(in srgb, var(--color-ochre) 22%, white);
+  color: color-mix(in srgb, var(--color-ochre) 50%, var(--primary));
+}
+.proto-status-coral {
+  border-color: var(--color-coral);
+  background: color-mix(in srgb, var(--color-coral) 18%, white);
+  color: var(--color-coral);
+}
+.proto-row-note {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 700;
+}
+.proto-col-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  color: var(--primary);
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.proto-col-contact span:not(:first-child),
+.proto-muted {
   color: var(--muted-foreground);
   font-weight: 500;
 }
-
-.denied-note {
-  background: color-mix(in srgb, var(--color-coral) 10%, white);
-  border: 2px dashed var(--color-coral);
-  color: var(--color-coral);
-  border-radius: 18px;
-  padding: 12px 14px;
-  font-size: 13.5px;
+.dob-trigger {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 8px;
   font-weight: 600;
-  line-height: 1.45;
+}
+.dob-trigger svg {
+  color: var(--color-coral);
+}
+.dob-empty {
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+.dob-has {
+  color: var(--primary);
+}
+.proto-denied-note {
+  display: block;
+  border: 2px dashed var(--color-coral);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-coral) 10%, white);
+  color: var(--color-coral);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.proto-col-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (min-width: 980px) {
+  .proto-col-actions {
+    justify-content: flex-end;
+  }
+}
+.proto-primary-action {
+  white-space: nowrap;
+}
+.proto-overflow-btn {
+  width: 36px;
+  padding: 0;
+}
+.proto-menu {
+  min-width: 160px;
+  padding: 6px;
+}
+.proto-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--primary);
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.proto-menu-item-danger {
+  color: var(--color-coral);
+}
+
+.proto-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--primary) 50%, transparent);
+  padding: 20px;
+}
+.proto-modal {
+  display: flex;
+  width: 100%;
+  max-width: 440px;
+  flex-direction: column;
+  gap: 12px;
+  border: 2px solid var(--primary);
+  border-radius: 22px;
+  background: white;
+  box-shadow: 6px 6px 0 var(--color-coral);
+  padding: 24px;
+}
+.proto-modal-title {
+  margin: 0;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+.proto-modal-body {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+.proto-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
 }
 </style>

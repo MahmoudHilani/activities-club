@@ -40,6 +40,14 @@ const router = createRouter({
       },
     },
     {
+      path: '/auth/appeal',
+      name: 'registration-appeal',
+      component: () => import('@/views/RegistrationAppealView.vue'),
+      meta: {
+        title: 'Registration appeal',
+      },
+    },
+    {
       path: '/admin/activities',
       name: 'admin-activities',
       component: () => import('@/views/AdminActivitiesView.vue'),

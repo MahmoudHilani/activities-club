@@ -18,6 +18,9 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class JwtService {
     private static final long DEFAULT_EXPIRATION_MS = 900_000L;
+    private static final String PURPOSE_CLAIM = "purpose";
+    private static final String MEMBER_PURPOSE = "member";
+    private static final String APPEAL_PURPOSE = "appeal";
 
     private final SecretKey signingKey;
     private final long expMs;
@@ -37,8 +40,17 @@ public class JwtService {
     }
 
     public String generate(User user) {
+        return generate(user, MEMBER_PURPOSE);
+    }
+
+    public String generateAppeal(User user) {
+        return generate(user, APPEAL_PURPOSE);
+    }
+
+    private String generate(User user, String purpose) {
         return Jwts.builder()
             .subject(user.getId().toString())
+            .claim(PURPOSE_CLAIM, purpose)
             .issuedAt(new Date())
             .expiration(new Date(System.currentTimeMillis() + expMs))
             .signWith(signingKey)
@@ -46,7 +58,18 @@ public class JwtService {
     }
 
     public Long extractUserId(String token) {
+        return extractUserId(token, MEMBER_PURPOSE);
+    }
+
+    public Long extractAppealUserId(String token) {
+        return extractUserId(token, APPEAL_PURPOSE);
+    }
+
+    private Long extractUserId(String token, String requiredPurpose) {
         Claims claims = parseClaims(token);
+        if (!requiredPurpose.equals(claims.get(PURPOSE_CLAIM, String.class))) {
+            throw new JwtException("Invalid token purpose");
+        }
         try {
             return Long.parseLong(claims.getSubject());
         } catch (NumberFormatException ex) {

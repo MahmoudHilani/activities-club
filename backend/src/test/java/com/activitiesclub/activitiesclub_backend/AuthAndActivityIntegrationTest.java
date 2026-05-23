@@ -285,12 +285,14 @@ class AuthAndActivityIntegrationTest {
     }
 
     @Test
-    void deniedUsersCanReapplyUsingTheSameRecord() throws Exception {
+    void deniedUsersCanAppealUsingTheirCredentialsWithoutReceivingMemberAccess() throws Exception {
         String adminToken = createAdminToken();
 
         registerStudent("alice", "alice@example.com", "password123");
         User deniedUser = userRepository.findByEmailIgnoreCase("alice@example.com")
             .orElseThrow(() -> new IllegalStateException("Expected denied candidate"));
+        deniedUser.setDateOfBirth(LocalDate.of(2001, 4, 5));
+        userRepository.save(deniedUser);
 
         mockMvc.perform(patch("/api/admin/users/{userId}/approval", deniedUser.getId())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -303,7 +305,7 @@ class AuthAndActivityIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.approvalStatus").value("DENIED"));
 
-        mockMvc.perform(post("/api/auth/login")
+        MvcResult deniedLoginResult = mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -311,8 +313,10 @@ class AuthAndActivityIntegrationTest {
                       "password": "password123"
                     }
                     """))
-            .andExpect(status().isForbidden())
-            .andExpect(status().reason("Your registration request was denied. Please contact an admin before trying again."));
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.token").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.appealToken").isString())
+            .andReturn();
 
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -324,18 +328,49 @@ class AuthAndActivityIntegrationTest {
                       "password": "newpassword123"
                     }
                     """))
+            .andExpect(status().isConflict());
+
+        String appealToken = readTextField(deniedLoginResult, "appealToken");
+        mockMvc.perform(get("/api/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + appealToken))
+            .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(patch("/api/auth/appeal")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "username": "alice updated",
+                      "userType": "STAFF",
+                      "studentNumber": null,
+                      "phoneNumber": null
+                    }
+                    """))
+            .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(patch("/api/auth/appeal")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "username": "alice updated",
+                      "userType": "STAFF",
+                      "studentNumber": null,
+                      "phoneNumber": null
+                    }
+                    """)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + appealToken))
             .andExpect(status().isAccepted())
             .andExpect(jsonPath("$.approvalStatus").value("PENDING"));
 
-        User reappliedUser = userRepository.findByEmailIgnoreCase("alice@example.com")
-            .orElseThrow(() -> new IllegalStateException("Expected reapplied user"));
+        User appealedUser = userRepository.findByEmailIgnoreCase("alice@example.com")
+            .orElseThrow(() -> new IllegalStateException("Expected appealed user"));
 
-        org.assertj.core.api.Assertions.assertThat(reappliedUser.getId()).isEqualTo(deniedUser.getId());
-        org.assertj.core.api.Assertions.assertThat(reappliedUser.getApprovalStatus()).isEqualTo(ApprovalStatus.PENDING);
-        org.assertj.core.api.Assertions.assertThat(reappliedUser.getUsername()).isEqualTo("alice updated");
-        org.assertj.core.api.Assertions.assertThat(reappliedUser.getUserType()).isEqualTo(UserType.STAFF);
-        org.assertj.core.api.Assertions.assertThat(reappliedUser.getStudentNumber()).isNull();
-        org.assertj.core.api.Assertions.assertThat(reappliedUser.getPhoneNumber()).isNull();
+        org.assertj.core.api.Assertions.assertThat(appealedUser.getId()).isEqualTo(deniedUser.getId());
+        org.assertj.core.api.Assertions.assertThat(appealedUser.getApprovalStatus()).isEqualTo(ApprovalStatus.PENDING);
+        org.assertj.core.api.Assertions.assertThat(appealedUser.getUsername()).isEqualTo("alice updated");
+        org.assertj.core.api.Assertions.assertThat(appealedUser.getUserType()).isEqualTo(UserType.STAFF);
+        org.assertj.core.api.Assertions.assertThat(appealedUser.getStudentNumber()).isNull();
+        org.assertj.core.api.Assertions.assertThat(appealedUser.getPhoneNumber()).isNull();
+        org.assertj.core.api.Assertions.assertThat(appealedUser.getDateOfBirth()).isNull();
     }
 
     @Test
