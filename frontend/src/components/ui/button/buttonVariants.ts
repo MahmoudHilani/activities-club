@@ -1,25 +1,25 @@
 import { cva } from 'class-variance-authority'
 
 export const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-4 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-bold tracking-tight leading-none transition-all duration-150 outline-none focus-visible:ring-4 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground shadow-[0_14px_32px_rgba(38,70,173,0.24)] hover:-translate-y-0.5 hover:brightness-105',
+          'bg-primary text-primary-foreground shadow-[3px_3px_0_var(--color-coral),6px_6px_0_var(--color-ochre)] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0_var(--color-coral),8px_8px_0_var(--color-ochre)]',
         secondary:
-          'bg-secondary text-secondary-foreground hover:bg-[color-mix(in_srgb,var(--secondary)_84%,white)]',
+          'border-2 border-primary bg-[color-mix(in_srgb,white_78%,#f4efe4_22%)] text-primary shadow-[3px_3px_0_var(--primary)] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0_var(--primary)]',
         outline:
-          'border border-border bg-white/75 text-foreground hover:bg-white',
+          'border-2 border-primary bg-white text-primary shadow-[3px_3px_0_var(--primary)] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0_var(--color-coral)]',
         ghost:
-          'text-muted-foreground hover:bg-white/70 hover:text-foreground',
+          'text-primary hover:bg-[color-mix(in_srgb,var(--primary)_8%,transparent)]',
         destructive:
-          'bg-destructive text-destructive-foreground hover:brightness-105',
+          'bg-[var(--color-coral)] text-white shadow-[3px_3px_0_var(--primary)] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[5px_5px_0_var(--primary)]',
       },
       size: {
-        default: 'h-11 px-5',
-        sm: 'h-9 px-4 text-sm',
-        lg: 'h-12 px-6 text-base',
+        default: 'h-11 px-5 text-sm',
+        sm: 'h-9 px-4 text-xs uppercase tracking-[0.05em]',
+        lg: 'h-[3.25rem] px-7 text-base',
       },
     },
     defaultVariants: {

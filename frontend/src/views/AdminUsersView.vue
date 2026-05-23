@@ -77,6 +77,28 @@ const users = computed(() =>
   }),
 )
 
+const summaryStats = computed(() => {
+  const list = usersQuery.data.value ?? []
+  return [
+    { label: 'Total', value: list.length, tone: 'ink' as const },
+    {
+      label: 'Pending',
+      value: list.filter((u) => u.approvalStatus === 'PENDING').length,
+      tone: 'ochre' as const,
+    },
+    {
+      label: 'Approved',
+      value: list.filter((u) => u.approvalStatus === 'APPROVED').length,
+      tone: 'leaf' as const,
+    },
+    {
+      label: 'Denied',
+      value: list.filter((u) => u.approvalStatus === 'DENIED').length,
+      tone: 'coral' as const,
+    },
+  ]
+})
+
 watch(
   () => usersQuery.data.value,
   (currentUsers) => {
@@ -178,8 +200,30 @@ function contactValue(value: string | null): string {
   return value ?? 'Not provided'
 }
 
-function canApprove(user: UserResponse): boolean {
+function canApprove(_user: UserResponse): boolean {
   return !approvalMutation.isPending.value
+}
+
+function approvalTone(status: ApprovalStatus): 'leaf' | 'ochre' | 'coral' {
+  switch (status) {
+    case 'APPROVED':
+      return 'leaf'
+    case 'PENDING':
+      return 'ochre'
+    case 'DENIED':
+      return 'coral'
+  }
+}
+
+function approvalLabel(status: ApprovalStatus): string {
+  switch (status) {
+    case 'APPROVED':
+      return 'approved'
+    case 'PENDING':
+      return 'pending'
+    case 'DENIED':
+      return 'denied'
+  }
 }
 
 function updateDateOfBirthFromCalendar(user: UserResponse, nextDate: DateValue | undefined): void {
@@ -274,10 +318,18 @@ function getDateOfBirthDisplay(user: UserResponse): string {
 </script>
 
 <template>
-  <section class="flex flex-1 flex-col gap-8">
-    <h1 class="font-serif text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-      User management
-    </h1>
+  <section class="users-shell">
+    <header class="users-hero">
+      <h1 class="users-title">
+        <span class="display-text">The</span>
+        <span class="hand-text"> people </span>
+        <span class="display-text">behind the club</span>
+      </h1>
+      <p class="users-lede">
+        Approve newcomers, grant admin access, and keep dates of birth on file for overnight
+        eligibility.
+      </p>
+    </header>
 
     <Alert v-if="usersQuery.isError.value" variant="destructive">
       {{ mapUsersError(usersQuery.error.value) }}
@@ -287,74 +339,84 @@ function getDateOfBirthDisplay(user: UserResponse): string {
       {{ actionError }}
     </Alert>
 
-    <div
-      v-if="usersQuery.isPending.value"
-      class="surface-panel rounded-[2rem] border border-white/70 p-8 text-muted-foreground"
-    >
-      Loading user management...
-    </div>
-
-    <div
-      v-else-if="users.length === 0"
-      class="surface-panel rounded-[2rem] border border-white/70 px-6 py-10 text-center"
-    >
-      <p class="text-lg font-semibold text-foreground">No users have registered yet.</p>
-    </div>
-
-    <div v-else class="grid gap-5">
-      <article
-        v-for="user in users"
-        :key="user.id"
-        class="surface-panel rounded-[1.85rem] border border-white/70 p-5 sm:p-6"
+    <div class="stat-grid">
+      <div
+        v-for="card in summaryStats"
+        :key="card.label"
+        class="stat-card"
+        :class="`stat-${card.tone}`"
       >
-        <div class="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-center gap-2">
-              <h2 class="break-words text-xl font-bold text-foreground">
-                {{ user.username }}
-              </h2>
+        <p class="stat-label">{{ card.label }}</p>
+        <p class="stat-value">{{ card.value }}</p>
+      </div>
+    </div>
+
+    <div v-if="usersQuery.isPending.value" class="state-card">
+      Loading user management…
+    </div>
+
+    <div v-else-if="users.length === 0" class="empty-card">
+      <h2 class="empty-title">
+        <span class="display-text">Nobody's</span>
+        <span class="hand-text"> signed up yet</span>
+      </h2>
+      <p class="empty-sub">When students or staff register, you'll see them appear here.</p>
+    </div>
+
+    <div v-else class="user-list">
+      <article v-for="user in users" :key="user.id" class="user-card">
+        <div class="user-card-inner">
+          <div class="user-info">
+            <div class="user-headline">
+              <h2 class="user-name">{{ user.username }}</h2>
+              <span
+                class="craft-tag"
+                :class="`craft-tag-${approvalTone(user.approvalStatus)}`"
+              >
+                {{ approvalLabel(user.approvalStatus) }}
+              </span>
               <span
                 v-if="user.userType === 'STAFF'"
-                class="rounded-full bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground"
-              >
-                Staff
-              </span>
+                class="craft-pill"
+              >Staff</span>
             </div>
 
-            <div class="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-              <p><span class="font-semibold text-foreground">Email:</span> {{ user.email }}</p>
-              <p>
-                <span class="font-semibold text-foreground">Student number:</span>
-                {{ contactValue(user.studentNumber) }}
-              </p>
-              <p>
-                <span class="font-semibold text-foreground">Phone number:</span>
-                {{ contactValue(user.phoneNumber) }}
-              </p>
-              <p v-if="user.userType !== 'STUDENT'">
-                <span class="font-semibold text-foreground">Date of birth:</span>
-                {{ contactValue(user.dateOfBirth) }}
-              </p>
-            </div>
+            <dl class="user-fields">
+              <div class="user-field">
+                <dt>Email</dt>
+                <dd>{{ user.email }}</dd>
+              </div>
+              <div class="user-field">
+                <dt>Student #</dt>
+                <dd>{{ contactValue(user.studentNumber) }}</dd>
+              </div>
+              <div class="user-field">
+                <dt>Phone</dt>
+                <dd>{{ contactValue(user.phoneNumber) }}</dd>
+              </div>
+              <div v-if="user.userType !== 'STUDENT'" class="user-field">
+                <dt>Date of birth</dt>
+                <dd>{{ contactValue(user.dateOfBirth) }}</dd>
+              </div>
+            </dl>
           </div>
 
-          <div class="flex w-full flex-col gap-2 xl:min-w-[14rem] xl:max-w-[14rem]">
-            <div v-if="user.userType === 'STUDENT'" class="space-y-2">
-              <span class="text-sm font-semibold text-foreground">Date of birth</span>
+          <div class="user-actions">
+            <div v-if="user.userType === 'STUDENT'" class="dob-block">
+              <span class="dob-label">Date of birth</span>
               <Popover v-model:open="dateOfBirthPopoverOpenByUserId[user.id]">
                 <PopoverTrigger as-child>
                   <Button
                     :aria-label="`Date of birth for ${user.username}`"
                     :disabled="dateOfBirthMutation.isPending.value"
-                    class="h-10 w-full justify-between rounded-2xl border border-border bg-white/80 px-3 text-left text-sm font-medium text-foreground shadow-none hover:bg-white"
+                    class="dob-trigger"
                     variant="outline"
                   >
-                    <span class="flex min-w-0 items-center gap-2">
-                      <CalendarDays class="h-4 w-4 shrink-0 text-primary" />
+                    <span class="dob-trigger-inner">
+                      <CalendarDays class="h-4 w-4" />
                       <span
-                        class="truncate"
                         :class="
-                          dateOfBirthByUserId[user.id] ? 'text-foreground' : 'text-muted-foreground'
+                          dateOfBirthByUserId[user.id] ? 'dob-trigger-has' : 'dob-trigger-empty'
                         "
                       >
                         {{ getDateOfBirthDisplay(user) }}
@@ -419,7 +481,7 @@ function getDateOfBirthDisplay(user: UserResponse): string {
                     class="flex justify-end border-t border-border/70 px-4 py-3"
                   >
                     <Button
-                      class="h-8 rounded-full px-3 text-muted-foreground shadow-none hover:bg-secondary/70 hover:text-foreground"
+                      class="h-8 rounded-full px-3 text-muted-foreground shadow-none"
                       size="sm"
                       variant="ghost"
                       @click="clearDateOfBirth(user)"
@@ -434,7 +496,7 @@ function getDateOfBirthDisplay(user: UserResponse): string {
             <template v-if="user.approvalStatus === 'PENDING'">
               <Button
                 :disabled="!canApprove(user)"
-                class="w-full justify-center"
+                class="user-action"
                 size="sm"
                 @click="updateApprovalStatus(user, 'APPROVED')"
               >
@@ -443,7 +505,7 @@ function getDateOfBirthDisplay(user: UserResponse): string {
               </Button>
               <Button
                 :disabled="approvalMutation.isPending.value"
-                class="w-full justify-center"
+                class="user-action"
                 size="sm"
                 variant="outline"
                 @click="updateApprovalStatus(user, 'DENIED')"
@@ -456,7 +518,7 @@ function getDateOfBirthDisplay(user: UserResponse): string {
             <Button
               v-else-if="user.approvalStatus === 'APPROVED'"
               :disabled="adminToggleMutation.isPending.value || isCurrentUser(user)"
-              class="w-full justify-center"
+              class="user-action"
               size="sm"
               :variant="user.isAdmin ? 'outline' : 'default'"
               @click="toggleAdminAccess(user)"
@@ -466,11 +528,8 @@ function getDateOfBirthDisplay(user: UserResponse): string {
               {{ user.isAdmin ? 'Remove admin' : 'Grant admin' }}
             </Button>
 
-            <div
-              v-else
-              class="rounded-2xl border border-dashed border-rose-200 bg-rose-50/70 px-4 py-3 text-sm text-rose-700"
-            >
-              This registration was denied. A new signup with the same email will reopen it.
+            <div v-else class="denied-note">
+              This registration was denied. A fresh signup with the same email will reopen it.
             </div>
           </div>
         </div>
@@ -478,3 +537,271 @@ function getDateOfBirthDisplay(user: UserResponse): string {
     </div>
   </section>
 </template>
+
+<style scoped>
+.users-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 1.75rem;
+}
+
+.users-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: flex-start;
+}
+.users-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(40px, 6vw, 64px);
+  line-height: 0.98;
+  color: var(--primary);
+  letter-spacing: -0.01em;
+}
+.users-title .hand-text {
+  font-size: 1.12em;
+}
+.users-lede {
+  max-width: 60ch;
+  font-size: 16px;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+@media (min-width: 900px) {
+  .stat-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.stat-card {
+  position: relative;
+  background: white;
+  border: 2px solid var(--primary);
+  border-radius: 22px;
+  padding: 18px;
+}
+.stat-ink {
+  box-shadow: 4px 4px 0 var(--primary);
+}
+.stat-ochre {
+  box-shadow: 4px 4px 0 var(--color-ochre);
+}
+.stat-leaf {
+  box-shadow: 4px 4px 0 var(--color-leaf);
+}
+.stat-coral {
+  box-shadow: 4px 4px 0 var(--color-coral);
+}
+.stat-label {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--color-coral);
+}
+.stat-ochre .stat-label {
+  color: var(--color-ochre);
+}
+.stat-leaf .stat-label {
+  color: var(--color-leaf);
+}
+.stat-ink .stat-label {
+  color: var(--primary);
+}
+.stat-value {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 42px;
+  line-height: 1;
+  color: var(--primary);
+}
+
+.state-card,
+.empty-card {
+  background: white;
+  border: 2px solid var(--primary);
+  border-radius: 28px;
+  padding: 28px;
+}
+.state-card {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--primary) 35%, white);
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+.empty-card {
+  box-shadow:
+    4px 4px 0 var(--color-coral),
+    8px 8px 0 var(--primary);
+}
+.empty-title {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--primary);
+}
+.empty-sub {
+  margin: 0;
+  font-size: 15px;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+
+.user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.user-card {
+  background: white;
+  border: 2px solid var(--primary);
+  border-radius: 26px;
+  padding: 22px;
+  box-shadow: 4px 4px 0 var(--color-leaf);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.user-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 var(--color-leaf);
+}
+
+.user-card-inner {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+@media (min-width: 1024px) {
+  .user-card-inner {
+    grid-template-columns: 1fr 16rem;
+  }
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.user-headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.user-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.05;
+  color: var(--primary);
+  word-break: break-word;
+}
+
+.user-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin: 0;
+}
+@media (min-width: 640px) {
+  .user-fields {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.user-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, white 92%, #f4efe4 8%);
+  border: 1.5px solid color-mix(in srgb, var(--primary) 18%, white);
+  border-radius: 14px;
+}
+.user-field dt {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-coral);
+  line-height: 1;
+}
+.user-field dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--primary);
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.user-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.user-action {
+  width: 100%;
+  justify-content: center;
+}
+
+.dob-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.dob-label {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--color-coral);
+}
+.dob-trigger {
+  height: 2.75rem;
+  width: 100%;
+  justify-content: flex-start;
+  font-weight: 600;
+}
+.dob-trigger-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.dob-trigger-inner svg {
+  color: var(--color-coral);
+  flex-shrink: 0;
+}
+.dob-trigger-has {
+  color: var(--primary);
+}
+.dob-trigger-empty {
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+.denied-note {
+  background: color-mix(in srgb, var(--color-coral) 10%, white);
+  border: 2px dashed var(--color-coral);
+  color: var(--color-coral);
+  border-radius: 18px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+</style>

@@ -13,7 +13,7 @@ const props = defineProps<{
   <TabsList
     :class="
       cn(
-        'grid h-12 w-full grid-cols-2 rounded-full bg-[color:color-mix(in_srgb,var(--secondary)_82%,white)] p-1 text-muted-foreground',
+        'grid h-12 w-full grid-cols-2 rounded-full border-2 border-primary bg-white p-1 text-primary shadow-[3px_3px_0_var(--color-coral)]',
         props.class,
       )
     "

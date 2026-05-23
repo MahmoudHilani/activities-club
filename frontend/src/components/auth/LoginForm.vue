@@ -53,13 +53,16 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <form class="space-y-5" novalidate @submit.prevent="onSubmit">
+  <form class="auth-form" novalidate @submit.prevent="onSubmit">
     <Alert v-if="serverError" variant="destructive">
       {{ serverError }}
     </Alert>
 
-    <div class="space-y-2.5">
-      <label class="text-sm font-semibold text-foreground" for="login-email">Email</label>
+    <div class="field">
+      <label class="field-label" for="login-email">
+        <span class="field-label-text">Email</span>
+        <span class="field-label-hint">the one you signed up with</span>
+      </label>
       <Input
         id="login-email"
         v-model="email"
@@ -68,26 +71,70 @@ const onSubmit = handleSubmit(async (values) => {
         placeholder="you@campus.edu"
         type="email"
       />
-      <p v-if="errors.email" class="text-sm text-destructive">{{ errors.email }}</p>
+      <p v-if="errors.email" class="field-error">{{ errors.email }}</p>
     </div>
 
-    <div class="space-y-2.5">
-      <label class="text-sm font-semibold text-foreground" for="login-password">Password</label>
+    <div class="field">
+      <label class="field-label" for="login-password">
+        <span class="field-label-text">Password</span>
+        <span class="field-label-hint">eight characters or more</span>
+      </label>
       <Input
         id="login-password"
         v-model="password"
         v-bind="passwordAttrs"
         autocomplete="current-password"
-        placeholder="Enter your password"
+        placeholder="••••••••"
         type="password"
       />
-      <p class="text-xs text-muted-foreground">Use the password attached to your account.</p>
-      <p v-if="errors.password" class="text-sm text-destructive">{{ errors.password }}</p>
+      <p v-if="errors.password" class="field-error">{{ errors.password }}</p>
     </div>
 
-    <Button class="mt-1 w-full" :disabled="isSubmitting" size="lg" type="submit">
+    <Button class="submit-btn" :disabled="isSubmitting" size="lg" type="submit">
       <LoaderCircle v-if="isSubmitting" class="h-4 w-4 animate-spin" />
       Sign in
     </Button>
   </form>
 </template>
+
+<style scoped>
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.field-label {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  justify-content: space-between;
+}
+.field-label-text {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--primary);
+}
+.field-label-hint {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--color-coral);
+}
+.field-error {
+  font-size: 13px;
+  color: var(--color-coral);
+  font-weight: 600;
+  margin: 0;
+}
+.submit-btn {
+  margin-top: 6px;
+  width: 100%;
+}
+</style>

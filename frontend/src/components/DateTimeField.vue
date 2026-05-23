@@ -121,7 +121,7 @@ function pad(value: number): string {
   <Popover v-model:open="open">
     <PopoverTrigger as-child>
       <Button
-        class="h-12 w-full justify-between rounded-2xl border border-border bg-white/80 px-4 py-3 text-left font-medium text-foreground shadow-none hover:bg-white"
+        class="h-12 w-full justify-between rounded-2xl px-4 py-3 text-left font-medium"
         variant="outline"
       >
         <span class="flex min-w-0 items-center gap-3">

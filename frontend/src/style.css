@@ -158,6 +158,259 @@
     background: color-mix(in srgb, white 88%, rgba(26, 86, 219, 0.08));
     box-shadow: 0 8px 20px rgba(38, 70, 173, 0.08);
   }
+
+  /* ---------- Handmade aesthetic kit ---------- */
+
+  .craft-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(680px 480px at 8% 6%, rgba(255, 122, 89, 0.14), transparent 60%),
+      radial-gradient(760px 560px at 92% 10%, rgba(245, 176, 66, 0.14), transparent 60%),
+      radial-gradient(840px 600px at 50% 92%, rgba(91, 165, 114, 0.1), transparent 60%);
+  }
+
+  .craft-card {
+    position: relative;
+    background: white;
+    border: 2px solid var(--primary);
+    border-radius: 24px;
+    box-shadow: 4px 4px 0 var(--primary);
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+
+  .craft-card-coral {
+    box-shadow:
+      3px 3px 0 var(--color-coral),
+      6px 6px 0 var(--primary);
+  }
+  .craft-card-ochre {
+    box-shadow:
+      3px 3px 0 var(--color-ochre),
+      6px 6px 0 var(--primary);
+  }
+  .craft-card-leaf {
+    box-shadow:
+      3px 3px 0 var(--color-leaf),
+      6px 6px 0 var(--primary);
+  }
+
+  .craft-card-hover:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0 var(--primary);
+  }
+  .craft-card-coral.craft-card-hover:hover {
+    box-shadow:
+      5px 5px 0 var(--color-coral),
+      9px 9px 0 var(--primary);
+  }
+
+  .craft-shadow-double {
+    box-shadow:
+      3px 3px 0 var(--color-coral),
+      6px 6px 0 var(--color-ochre);
+  }
+
+  .craft-shadow-double-hover {
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+  .craft-shadow-double-hover:hover {
+    transform: translate(-2px, -2px);
+    box-shadow:
+      5px 5px 0 var(--color-coral),
+      8px 8px 0 var(--color-ochre);
+  }
+
+  .craft-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 2px solid var(--primary);
+    background: white;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1.1;
+  }
+  .craft-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-family: var(--font-hand);
+    font-weight: 700;
+    font-size: 17px;
+    line-height: 1;
+    transform: rotate(-3deg);
+  }
+  .craft-tag-coral {
+    background: var(--color-coral);
+    color: white;
+  }
+  .craft-tag-ochre {
+    background: var(--color-ochre);
+    color: var(--primary);
+  }
+  .craft-tag-leaf {
+    background: var(--color-leaf);
+    color: white;
+  }
+  .craft-tag-ink {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+  .craft-tag-paper {
+    background: color-mix(in srgb, white 78%, #f4efe4 22%);
+    color: var(--primary);
+    border: 1.5px solid var(--primary);
+  }
+
+  .hand-text {
+    font-family: var(--font-hand);
+    font-weight: 700;
+    color: var(--color-coral);
+    font-style: normal;
+    line-height: 1;
+  }
+
+  .hand-text-leaf {
+    color: var(--color-leaf);
+  }
+  .hand-text-ochre {
+    color: var(--color-ochre);
+  }
+  .hand-text-ink {
+    color: var(--primary);
+  }
+
+  .display-text {
+    font-family: var(--font-display);
+    font-weight: 400;
+    color: var(--primary);
+    letter-spacing: -0.005em;
+  }
+
+  .dashed-divider {
+    border-top: 1.5px dashed color-mix(in srgb, var(--primary) 25%, transparent);
+  }
+
+  .scribble-under {
+    position: relative;
+    display: inline-block;
+    padding: 0 4px 10px;
+  }
+  .scribble-under::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 8px;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' width='100' height='8'><path d='M2 5 Q 16 1, 32 5 T 64 5 T 98 5' stroke='%23ff7a59' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>")
+      repeat-x;
+    background-size: 100px 8px;
+  }
+
+  .scribble-under-leaf::after {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' width='100' height='8'><path d='M2 5 Q 16 1, 32 5 T 64 5 T 98 5' stroke='%235ba572' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>");
+  }
+
+  .craft-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: color-mix(in srgb, white 78%, #f4efe4 22%);
+    color: var(--primary);
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1.5px solid var(--primary);
+    box-shadow: 2px 2px 0 var(--primary);
+    transform: rotate(-1.5deg);
+  }
+  .craft-eyebrow-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--color-coral);
+    border-radius: 50%;
+    animation: craft-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes craft-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.4);
+      opacity: 0.6;
+    }
+  }
+
+  .craft-field {
+    width: 100%;
+    background: white;
+    border: 2px solid var(--primary);
+    border-radius: 18px;
+    padding: 12px 16px;
+    font-family: var(--font-sans);
+    font-size: 15px;
+    color: var(--primary);
+    outline: 0;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+  .craft-field::placeholder {
+    color: var(--muted-foreground);
+  }
+  .craft-field:focus,
+  .craft-field:focus-visible {
+    border-color: var(--color-coral);
+    box-shadow: 3px 3px 0 var(--color-coral);
+  }
+
+  .craft-field-textarea {
+    min-height: 9rem;
+    resize: vertical;
+  }
+
+  .craft-fab-shadow {
+    box-shadow:
+      3px 3px 0 var(--color-coral),
+      6px 6px 0 var(--color-ochre);
+  }
+
+  /* Decorative paper-clip dots that float behind sections */
+  .craft-confetti {
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .craft-confetti-coral {
+    color: var(--color-coral);
+  }
+  .craft-confetti-leaf {
+    color: var(--color-leaf);
+  }
+  .craft-confetti-ochre {
+    color: var(--color-ochre);
+  }
 }
 
 @media (min-width: 640px) {

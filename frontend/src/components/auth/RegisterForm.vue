@@ -143,25 +143,28 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <div v-if="submittedMessage" class="space-y-5 rounded-[1.85rem] border border-white/70 bg-white/65 p-6">
-    <div class="space-y-2">
-      <h2 class="text-xl font-bold text-foreground">Awaiting approval</h2>
-      <p class="text-sm text-muted-foreground">
-        {{ submittedMessage }}
-      </p>
-    </div>
-    <Button class="w-full" type="button" variant="outline" @click="goToLogin">
+  <div v-if="submittedMessage" class="awaiting-card">
+    <span class="craft-tag craft-tag-ochre awaiting-stamp">on the list</span>
+    <h2 class="awaiting-title">
+      <span class="display-text">Awaiting</span>
+      <span class="hand-text"> approval</span>
+    </h2>
+    <p class="awaiting-body">{{ submittedMessage }}</p>
+    <Button class="awaiting-back" type="button" variant="outline" @click="goToLogin">
       Back to login
     </Button>
   </div>
 
-  <form v-else class="space-y-5" novalidate @submit.prevent="onSubmit">
+  <form v-else class="auth-form" novalidate @submit.prevent="onSubmit">
     <Alert v-if="serverError" variant="destructive">
       {{ serverError }}
     </Alert>
 
-    <div class="space-y-2.5">
-      <label class="text-sm font-semibold text-foreground" for="register-user-type">User type</label>
+    <div class="field">
+      <label class="field-label" for="register-user-type">
+        <span class="field-label-text">I'm a…</span>
+        <span class="field-label-hint">student or staff</span>
+      </label>
       <Select v-model="userType">
         <SelectTrigger id="register-user-type" aria-label="User type">
           <SelectValue placeholder="Select your user type" />
@@ -172,23 +175,29 @@ const onSubmit = handleSubmit(async (values) => {
           </SelectItem>
         </SelectContent>
       </Select>
-      <p v-if="errors.userType" class="text-sm text-destructive">{{ errors.userType }}</p>
+      <p v-if="errors.userType" class="field-error">{{ errors.userType }}</p>
     </div>
 
-    <div class="space-y-2.5">
-      <label class="text-sm font-semibold text-foreground" for="register-username">Name and surname</label>
+    <div class="field">
+      <label class="field-label" for="register-username">
+        <span class="field-label-text">Name and surname</span>
+        <span class="field-label-hint">the one on your card</span>
+      </label>
       <Input
         id="register-username"
         v-model="username"
         v-bind="usernameAttrs"
         autocomplete="username"
-        placeholder="Enter your name and surname"
+        placeholder="e.g. Niamh Murphy"
       />
-      <p v-if="errors.username" class="text-sm text-destructive">{{ errors.username }}</p>
+      <p v-if="errors.username" class="field-error">{{ errors.username }}</p>
     </div>
 
-    <div class="space-y-2.5">
-      <label class="text-sm font-semibold text-foreground" for="register-email">Email</label>
+    <div class="field">
+      <label class="field-label" for="register-email">
+        <span class="field-label-text">Email</span>
+        <span class="field-label-hint">no spam, promise</span>
+      </label>
       <Input
         id="register-email"
         v-model="email"
@@ -197,74 +206,156 @@ const onSubmit = handleSubmit(async (values) => {
         placeholder="you@campus.edu"
         type="email"
       />
-      <p v-if="errors.email" class="text-sm text-destructive">{{ errors.email }}</p>
+      <p v-if="errors.email" class="field-error">{{ errors.email }}</p>
     </div>
 
-    <div v-if="isStudent" class="space-y-2.5">
-      <label class="text-sm font-semibold text-foreground" for="register-student-number">
-        Student number
+    <div v-if="isStudent" class="field">
+      <label class="field-label" for="register-student-number">
+        <span class="field-label-text">Student number</span>
+        <span class="field-label-hint">on your ID card</span>
       </label>
       <Input
         id="register-student-number"
         v-model="studentNumber"
         v-bind="studentNumberAttrs"
         autocomplete="off"
-        placeholder="Enter your student number"
+        placeholder="e.g. 3209412"
       />
-      <p v-if="errors.studentNumber" class="text-sm text-destructive">
-        {{ errors.studentNumber }}
-      </p>
+      <p v-if="errors.studentNumber" class="field-error">{{ errors.studentNumber }}</p>
     </div>
 
-    <div v-if="isStudent" class="space-y-2.5">
-      <label class="text-sm font-semibold text-foreground" for="register-phone-number">
-        Phone number
+    <div v-if="isStudent" class="field">
+      <label class="field-label" for="register-phone-number">
+        <span class="field-label-text">Phone number</span>
+        <span class="field-label-hint">for trip day stuff</span>
       </label>
       <Input
         id="register-phone-number"
         v-model="phoneNumber"
         v-bind="phoneNumberAttrs"
         autocomplete="tel"
-        placeholder="Enter your phone number"
+        placeholder="+353…"
         type="tel"
       />
-      <p v-if="errors.phoneNumber" class="text-sm text-destructive">{{ errors.phoneNumber }}</p>
+      <p v-if="errors.phoneNumber" class="field-error">{{ errors.phoneNumber }}</p>
     </div>
 
-    <div class="space-y-2.5">
-      <label class="text-sm font-semibold text-foreground" for="register-password">Password</label>
+    <div class="field">
+      <label class="field-label" for="register-password">
+        <span class="field-label-text">Password</span>
+        <span class="field-label-hint">8–72 characters</span>
+      </label>
       <Input
         id="register-password"
         v-model="password"
         v-bind="passwordAttrs"
         autocomplete="new-password"
-        placeholder="Use at least 8 characters"
+        placeholder="••••••••"
         type="password"
       />
-      <p class="text-xs text-muted-foreground">Use 8 to 72 characters.</p>
-      <p v-if="errors.password" class="text-sm text-destructive">{{ errors.password }}</p>
+      <p v-if="errors.password" class="field-error">{{ errors.password }}</p>
     </div>
 
-    <div class="space-y-2.5">
-      <label class="text-sm font-semibold text-foreground" for="register-confirm-password">
-        Confirm password
+    <div class="field">
+      <label class="field-label" for="register-confirm-password">
+        <span class="field-label-text">Confirm password</span>
+        <span class="field-label-hint">once more</span>
       </label>
       <Input
         id="register-confirm-password"
         v-model="confirmPassword"
         v-bind="confirmPasswordAttrs"
         autocomplete="new-password"
-        placeholder="Repeat your password"
+        placeholder="••••••••"
         type="password"
       />
-      <p v-if="errors.confirmPassword" class="text-sm text-destructive">
-        {{ errors.confirmPassword }}
-      </p>
+      <p v-if="errors.confirmPassword" class="field-error">{{ errors.confirmPassword }}</p>
     </div>
 
-    <Button class="mt-1 w-full" :disabled="isSubmitting" size="lg" type="submit">
+    <Button class="submit-btn" :disabled="isSubmitting" size="lg" type="submit">
       <LoaderCircle v-if="isSubmitting" class="h-4 w-4 animate-spin" />
       Create account
     </Button>
   </form>
 </template>
+
+<style scoped>
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.field-label {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  justify-content: space-between;
+}
+.field-label-text {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--primary);
+}
+.field-label-hint {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--color-coral);
+}
+.field-error {
+  font-size: 13px;
+  color: var(--color-coral);
+  font-weight: 600;
+  margin: 0;
+}
+.submit-btn {
+  margin-top: 6px;
+  width: 100%;
+}
+
+.awaiting-card {
+  position: relative;
+  background: white;
+  border: 2px solid var(--primary);
+  border-radius: 28px;
+  padding: 28px 26px 24px;
+  box-shadow:
+    4px 4px 0 var(--color-leaf),
+    8px 8px 0 var(--primary);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.awaiting-stamp {
+  position: absolute;
+  top: -14px;
+  right: 22px;
+  box-shadow: 2px 2px 0 var(--primary);
+  transform: rotate(6deg);
+}
+.awaiting-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 1;
+  color: var(--primary);
+}
+.awaiting-body {
+  margin: 0;
+  font-size: 15px;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+.awaiting-back {
+  margin-top: 8px;
+  width: 100%;
+}
+</style>

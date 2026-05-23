@@ -5,18 +5,22 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
 
-const alertVariants = cva('rounded-2xl border px-4 py-3 text-sm', {
-  variants: {
-    variant: {
-      default: 'border-border bg-white/75 text-foreground',
-      destructive:
-        'border-[color:color-mix(in_srgb,var(--destructive)_34%,white)] bg-[color:color-mix(in_srgb,var(--destructive)_12%,white)] text-destructive',
+const alertVariants = cva(
+  'relative rounded-[1.25rem] border-2 px-5 py-4 text-sm font-medium leading-6',
+  {
+    variants: {
+      variant: {
+        default:
+          'border-primary bg-white text-primary shadow-[3px_3px_0_var(--color-leaf)]',
+        destructive:
+          'border-[var(--color-coral)] bg-[color:color-mix(in_srgb,var(--color-coral)_12%,white)] text-[var(--color-coral)] shadow-[3px_3px_0_var(--primary)]',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
     },
   },
-  defaultVariants: {
-    variant: 'default',
-  },
-})
+)
 
 const props = withDefaults(
   defineProps<{

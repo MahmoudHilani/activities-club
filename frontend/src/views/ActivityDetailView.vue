@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { ArrowLeft, CalendarDays, LoaderCircle, MapPin, Ticket, Users } from 'lucide-vue-next'
+import { ArrowLeft, CalendarDays, LoaderCircle, MapPin } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -84,6 +84,9 @@ const availabilityLabel = computed(() =>
 )
 const reservationWindowLabel = computed(() =>
   formatReservationWindow(activity.value?.reservationOpensAt, activity.value?.reservationClosesAt),
+)
+const locationFullLabel = computed(() =>
+  formatLocation(activity.value?.locationName, activity.value?.locationAddress),
 )
 const isAdminPreview = computed(() => {
   if (!activity.value || !isAdmin.value) {
@@ -215,52 +218,29 @@ async function handlePrimaryAction(): Promise<void> {
 </script>
 
 <template>
-  <section class="flex flex-1 flex-col gap-8 pb-36 sm:pb-40">
-    <div v-if="isInitialLoading" class="space-y-8">
-      <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_34rem]">
-        <div class="space-y-5">
-          <div class="h-8 w-36 rounded-full bg-muted animate-pulse" />
-          <div class="h-16 w-4/5 rounded-[2rem] bg-muted animate-pulse" />
-          <div class="h-6 w-2/3 rounded-full bg-muted animate-pulse" />
-          <div class="grid gap-4 sm:grid-cols-3">
-            <div
-              v-for="placeholder in 3"
-              :key="placeholder"
-              class="h-28 rounded-[1.75rem] bg-muted animate-pulse"
-            />
-          </div>
+  <section class="detail-shell">
+    <div v-if="isInitialLoading" class="detail-grid">
+      <div class="detail-skel-col">
+        <div class="skel-chip" />
+        <div class="skel-title" />
+        <div class="skel-meta-row">
+          <div v-for="i in 3" :key="i" class="skel-meta" />
         </div>
-
-        <div class="aspect-[1.28/1] rounded-[2.25rem] bg-muted animate-pulse" />
+        <div class="skel-block" />
       </div>
-
-      <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_34rem]">
-        <div class="space-y-5">
-          <div
-            v-for="placeholder in 3"
-            :key="placeholder"
-            class="h-40 rounded-[2rem] bg-muted animate-pulse"
-          />
-        </div>
-        <div class="h-72 rounded-[2rem] bg-muted animate-pulse" />
-      </div>
+      <div class="skel-photo" />
     </div>
 
-    <div
-      v-else-if="isNotFound"
-      class="surface-panel rounded-[2rem] border border-white/70 px-6 py-10 shadow-[0_20px_50px_rgba(15,23,42,0.08)] sm:px-8"
-    >
-      <p class="text-sm font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-        Activity not found
-      </p>
-      <h1 class="mt-3 max-w-xl font-serif text-4xl font-bold tracking-tight text-foreground">
-        This activity is no longer available.
+    <div v-else-if="isNotFound" class="not-found-card">
+      <h1 class="not-found-title">
+        <span class="display-text">This activity</span>
+        <span class="hand-text"> wandered off</span>
       </h1>
-      <p class="mt-4 max-w-2xl text-base leading-8 text-muted-foreground">
-        It may have been unpublished, cancelled, or the link may be incorrect.
+      <p class="not-found-blurb">
+        It might have been unpublished, cancelled, or the link might be a tad wrong. No bother —
+        head back to the listings.
       </p>
-
-      <div class="mt-8">
+      <div>
         <RouterLink :to="{ name: 'activities' }">
           <Button variant="outline">
             <ArrowLeft class="h-4 w-4" />
@@ -279,206 +259,121 @@ async function handlePrimaryAction(): Promise<void> {
       <Button size="sm" variant="outline" @click="activityQuery.refetch()"> Try again </Button>
     </Alert>
 
-    <article v-else-if="activity">
-      <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_34rem] xl:items-start">
-        <div class="space-y-6">
-          <div class="space-y-6">
-            <RouterLink
-              :to="{ name: 'activities' }"
-              class="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-white hover:text-foreground"
-            >
-              <ArrowLeft class="h-4 w-4" />
-              Back to activities
-            </RouterLink>
+    <article v-else-if="activity" class="detail-article">
+      <RouterLink :to="{ name: 'activities' }" class="back-pill">
+        <ArrowLeft class="h-4 w-4" />
+        <span>back to the calendar</span>
+      </RouterLink>
 
-            <div class="space-y-5">
-              <h1
-                class="headline-balance max-w-3xl font-serif text-5xl font-bold tracking-[-0.04em] text-foreground sm:text-6xl"
-              >
-                {{ activity.title }}
-              </h1>
-            </div>
+      <div class="detail-grid">
+        <!-- Left: text column -->
+        <div class="detail-left">
+          <div class="title-stack">
+            <span class="craft-tag craft-tag-coral title-tag">{{ scheduleHeadline }}</span>
+            <h1 class="detail-title">{{ activity.title }}</h1>
+            <p class="detail-sub">
+              <MapPin class="h-4 w-4" />
+              <span>{{ locationFullLabel }}</span>
+            </p>
           </div>
 
-          <div class="grid gap-4 sm:grid-cols-3">
-            <div class="surface-panel rounded-[1.6rem] border border-white/65 p-5">
-              <CalendarDays class="h-5 w-5 text-primary" />
-              <p
-                class="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground"
-              >
-                Date
-              </p>
-              <p class="mt-2 text-lg font-bold text-foreground">
-                {{ scheduleHeadline }}
-              </p>
-            </div>
-
-            <div class="surface-panel rounded-[1.6rem] border border-white/65 p-5">
-              <Users class="h-5 w-5 text-primary" />
-              <p
-                class="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground"
-              >
-                Availability
-              </p>
-              <p class="mt-2 text-lg font-bold text-foreground">
-                {{ availabilityLabel }}
-              </p>
-            </div>
-
-            <div class="surface-panel rounded-[1.6rem] border border-white/65 p-5">
-              <Ticket class="h-5 w-5 text-primary" />
-              <p
-                class="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground"
-              >
-                Reservation
-              </p>
-              <p class="mt-2 text-lg font-bold text-foreground">
-                {{ reservationStatusLabel }}
-              </p>
-            </div>
-          </div>
-          <Alert v-if="isAdminPreview" class="border-primary/25 bg-primary/8 text-foreground">
-            This activity is not publicly available yet. You are seeing an admin-only preview of the
-            detail page.
+          <Alert v-if="isAdminPreview" class="admin-preview-alert">
+            This activity isn't publicly available yet — you're seeing the admin preview.
           </Alert>
 
-          <div
-            class="surface-panel rounded-[2rem] border border-white/70 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)] sm:p-8"
-          >
-            <p class="text-sm font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-              Details
-            </p>
-            <h2 class="mt-3 text-3xl font-bold tracking-tight text-foreground">What to expect</h2>
-            <p class="mt-5 whitespace-pre-line text-base leading-8 text-slate-700">
-              {{ descriptionText }}
-            </p>
+          <div class="story-card">
+            <div class="story-header">
+              <span class="story-eyebrow">the story</span>
+              <h2 class="story-title">
+                <span class="display-text">What to</span>
+                <span class="hand-text"> expect</span>
+              </h2>
+            </div>
+            <p class="story-body">{{ descriptionText }}</p>
           </div>
         </div>
 
-        <div class="space-y-8">
-          <div
-            class="surface-panel overflow-hidden rounded-[2.5rem] border border-white/70 p-3 shadow-[0_28px_60px_rgba(15,23,42,0.1)]"
-          >
-            <img
-              :src="activity.imageUrl"
-              :alt="activity.title"
-              class="aspect-[1.2/1] w-full rounded-[2rem] object-cover"
-            />
+        <!-- Right: photo and sidebar -->
+        <div class="detail-right">
+          <div class="photo-frame">
+            <img :src="activity.imageUrl" :alt="activity.title" class="photo-frame-img" />
+            <span class="photo-sticker">save the date</span>
           </div>
 
-          <aside class="w-full xl:sticky xl:top-28">
-            <div
-              class="surface-panel w-full rounded-[2rem] border border-white/70 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)]"
-            >
-              <div class="flex items-start gap-4">
-                <div
-                  class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600"
-                >
-                  <CalendarDays class="h-6 w-6" />
-                </div>
-                <div>
-                  <p class="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                    Date and time
-                  </p>
-                  <p class="mt-2 text-xl font-bold leading-tight text-foreground">
-                    {{ scheduleRange }}
-                  </p>
-                </div>
+          <aside class="side-card">
+            <div class="side-row">
+              <div class="side-ico ico-coral">
+                <CalendarDays class="h-5 w-5" />
               </div>
-
-              <div class="my-6 h-px bg-border/80" />
-
-              <div class="flex items-start gap-4">
-                <div
-                  class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700"
-                >
-                  <MapPin class="h-6 w-6" />
-                </div>
-                <div>
-                  <p class="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                    Location
-                  </p>
-                  <p class="mt-2 text-xl font-bold leading-tight text-foreground">
-                    {{ activity.locationName || 'Location to be announced' }}
-                  </p>
-                  <p class="mt-2 text-sm leading-7 text-muted-foreground">
-                    {{ activity.locationAddress || 'The organizer will share venue details soon.' }}
-                  </p>
-                </div>
+              <div>
+                <p class="side-eyebrow">date and time</p>
+                <p class="side-value">{{ scheduleRange }}</p>
               </div>
-
-              <div class="my-6 h-px bg-border/80" />
-
-              <dl class="space-y-4 text-sm">
-                <div class="flex items-center justify-between gap-3">
-                  <dt class="text-muted-foreground">Price</dt>
-                  <dd class="font-semibold text-foreground">{{ ticketLabel }}</dd>
-                </div>
-                <div class="flex items-center justify-between gap-3">
-                  <dt class="text-muted-foreground">Spots</dt>
-                  <dd class="font-semibold text-foreground">{{ availabilityLabel }}</dd>
-                </div>
-                <div v-if="reservationWindowLabel" class="flex items-start justify-between gap-3">
-                  <dt class="text-muted-foreground">Reservation window</dt>
-                  <dd class="max-w-[12rem] text-right font-semibold text-foreground">
-                    {{ reservationWindowLabel }}
-                  </dd>
-                </div>
-              </dl>
             </div>
+            <div class="dashed-divider side-divider" />
+            <div class="side-row">
+              <div class="side-ico ico-ochre">
+                <MapPin class="h-5 w-5" />
+              </div>
+              <div>
+                <p class="side-eyebrow">location</p>
+                <p class="side-value">{{ activity.locationName || 'TBC' }}</p>
+                <p class="side-sub">
+                  {{ activity.locationAddress || 'The organiser will share venue details soon.' }}
+                </p>
+              </div>
+            </div>
+            <div class="dashed-divider side-divider" />
+            <dl class="side-dl">
+              <div class="side-dl-row">
+                <dt>Price</dt>
+                <dd>{{ ticketLabel }}</dd>
+              </div>
+              <div class="side-dl-row">
+                <dt>Spots</dt>
+                <dd>{{ availabilityLabel }}</dd>
+              </div>
+              <div v-if="reservationWindowLabel" class="side-dl-row">
+                <dt>Window</dt>
+                <dd>{{ reservationWindowLabel }}</dd>
+              </div>
+            </dl>
           </aside>
         </div>
       </div>
 
-      <div class="fixed inset-x-4 bottom-4 z-30 sm:inset-x-6 lg:inset-x-8">
-        <div class="mx-auto max-w-7xl">
-          <div
-            class="surface-panel rounded-[2.2rem] border border-white/70 px-5 py-4 shadow-[0_28px_60px_rgba(15,23,42,0.12)] sm:px-7"
-          >
-            <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-              <div class="space-y-2">
-                <p class="text-sm font-semibold text-muted-foreground">
-                  {{ scheduleHeadline }}
-                </p>
-                <h2
-                  class="headline-balance text-2xl font-extrabold tracking-[-0.03em] text-foreground"
-                >
-                  {{ activity.title }}
-                </h2>
-                <p class="text-sm text-muted-foreground">
-                  {{ ticketLabel }} - {{ reservationStatusLabel }}
-                </p>
-              </div>
-
-              <div class="flex flex-col gap-3 lg:items-end">
-                <Alert
-                  v-if="reservationError"
-                  class="w-full max-w-md border-destructive/40 bg-destructive/10 text-left text-destructive"
-                  variant="destructive"
-                >
-                  {{ reservationError }}
-                </Alert>
-
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <div
-                    class="rounded-full border border-border bg-white/75 px-4 py-2 text-sm font-semibold text-foreground"
-                  >
-                    {{ ticketLabel }}
-                  </div>
-                  <Button
-                    class="min-w-44 shadow-[0_18px_42px_rgba(15,23,42,0.18)]"
-                    size="lg"
-                    :disabled="reservationMutation.isPending.value || isCtaDisabled"
-                    @click="handlePrimaryAction"
-                  >
-                    <LoaderCircle
-                      v-if="reservationMutation.isPending.value"
-                      class="h-4 w-4 animate-spin"
-                    />
-                    {{ ctaLabel }}
-                  </Button>
-                </div>
-              </div>
+      <!-- Sticky CTA strip -->
+      <div class="cta-strip" role="region" aria-label="Reservation actions">
+        <div class="cta-strip-inner">
+          <div class="cta-info">
+            <p class="cta-when">{{ scheduleHeadline }}</p>
+            <h2 class="cta-title">{{ activity.title }}</h2>
+            <p class="cta-status">
+              <span class="cta-spots">{{ availabilityLabel }}</span>
+            </p>
+          </div>
+          <div class="cta-actions">
+            <Alert
+              v-if="reservationError"
+              class="cta-alert"
+              variant="destructive"
+            >
+              {{ reservationError }}
+            </Alert>
+            <div class="cta-buttons">
+              <span class="cta-price">{{ ticketLabel }}</span>
+              <Button
+                class="cta-primary"
+                size="lg"
+                :disabled="reservationMutation.isPending.value || isCtaDisabled"
+                @click="handlePrimaryAction"
+              >
+                <LoaderCircle
+                  v-if="reservationMutation.isPending.value"
+                  class="h-4 w-4 animate-spin"
+                />
+                {{ ctaLabel }}
+              </Button>
             </div>
           </div>
         </div>
@@ -486,3 +381,458 @@ async function handlePrimaryAction(): Promise<void> {
     </article>
   </section>
 </template>
+
+<style scoped>
+.detail-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 2rem;
+  padding-bottom: 9rem;
+}
+
+.back-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border: 2px solid var(--primary);
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 16px 8px 12px;
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--color-coral);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+  width: max-content;
+}
+.back-pill:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--color-coral);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: start;
+}
+@media (min-width: 1100px) {
+  .detail-grid {
+    grid-template-columns: minmax(0, 1fr) 30rem;
+    gap: 40px;
+  }
+}
+
+.detail-left {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.title-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.title-tag {
+  align-self: flex-start;
+  box-shadow: 2px 2px 0 var(--primary);
+  transform: rotate(-2deg);
+}
+.detail-title {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(40px, 6vw, 68px);
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+  color: var(--primary);
+  text-wrap: balance;
+}
+.detail-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--color-coral);
+}
+
+.admin-preview-alert {
+  border-color: var(--color-ochre) !important;
+  background: color-mix(in srgb, var(--color-ochre) 16%, white) !important;
+  color: var(--primary) !important;
+}
+
+.story-card {
+  background: white;
+  border: 2px solid var(--primary);
+  border-radius: 28px;
+  padding: 28px 26px 30px;
+  box-shadow: 5px 5px 0 var(--color-leaf);
+}
+.story-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.story-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+.story-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 36px;
+  line-height: 1;
+  color: var(--primary);
+}
+.story-title .hand-text {
+  font-size: 1.1em;
+}
+.story-body {
+  margin: 0;
+  white-space: pre-line;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--primary);
+}
+
+.detail-right {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.photo-frame {
+  position: relative;
+  border: 2px solid var(--primary);
+  background: white;
+  border-radius: 28px;
+  padding: 10px;
+  box-shadow:
+    5px 5px 0 var(--color-coral),
+    10px 10px 0 var(--color-ochre);
+}
+.photo-frame-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 5 / 4;
+  object-fit: cover;
+  border-radius: 20px;
+}
+.photo-sticker {
+  position: absolute;
+  bottom: -12px;
+  right: 18px;
+  background: var(--color-coral);
+  color: white;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 19px;
+  padding: 5px 16px;
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--primary);
+  transform: rotate(4deg);
+}
+
+.side-card {
+  background: white;
+  border: 2px solid var(--primary);
+  border-radius: 26px;
+  padding: 24px;
+  box-shadow: 4px 4px 0 var(--primary);
+}
+@media (min-width: 1100px) {
+  .side-card {
+    position: sticky;
+    top: 6rem;
+  }
+}
+.side-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.side-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  border: 2px solid var(--primary);
+  flex-shrink: 0;
+}
+.side-ico svg {
+  color: var(--primary);
+}
+.ico-coral {
+  background: color-mix(in srgb, var(--color-coral) 22%, white);
+}
+.ico-ochre {
+  background: color-mix(in srgb, var(--color-ochre) 22%, white);
+}
+.side-eyebrow {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.side-value {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.1;
+  color: var(--primary);
+}
+.side-sub {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+.side-divider {
+  margin: 18px 0;
+}
+.side-dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.side-dl-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+.side-dl-row dt {
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+.side-dl-row dd {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--color-coral);
+  text-align: right;
+}
+
+/* Sticky CTA */
+.cta-strip {
+  position: fixed;
+  inset: auto 1rem 1rem 1rem;
+  z-index: 40;
+  pointer-events: none;
+}
+@media (min-width: 640px) {
+  .cta-strip {
+    inset: auto 1.5rem 1.25rem 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .cta-strip {
+    inset: auto 2rem 1.5rem 2rem;
+  }
+}
+.cta-strip-inner {
+  pointer-events: auto;
+  margin: 0 auto;
+  max-width: 80rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: 2px solid var(--primary);
+  border-radius: 28px;
+  padding: 18px 24px;
+  box-shadow:
+    5px 5px 0 var(--color-coral),
+    10px 10px 0 var(--color-ochre);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (min-width: 900px) {
+  .cta-strip-inner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+.cta-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cta-when {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--color-ochre);
+  margin: 0;
+}
+.cta-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+.cta-status {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+}
+.cta-spots {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--color-ochre);
+  line-height: 1;
+}
+.cta-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+@media (min-width: 900px) {
+  .cta-actions {
+    align-items: flex-end;
+  }
+}
+.cta-buttons {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.cta-price {
+  display: inline-flex;
+  align-items: center;
+  background: white;
+  color: var(--primary);
+  border: 2px solid var(--primary-foreground);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 20px;
+}
+.cta-primary {
+  background: var(--color-coral) !important;
+  color: white !important;
+  border: 2px solid var(--primary-foreground) !important;
+  box-shadow:
+    3px 3px 0 var(--color-ochre),
+    6px 6px 0 var(--primary-foreground) !important;
+}
+.cta-primary:hover:not(:disabled) {
+  box-shadow:
+    5px 5px 0 var(--color-ochre),
+    8px 8px 0 var(--primary-foreground) !important;
+}
+.cta-alert {
+  background: white !important;
+  color: var(--color-coral) !important;
+}
+
+/* not found */
+.not-found-card {
+  background: white;
+  border: 2px solid var(--primary);
+  border-radius: 32px;
+  padding: 48px 36px;
+  box-shadow:
+    5px 5px 0 var(--color-coral),
+    10px 10px 0 var(--color-ochre);
+  max-width: 60ch;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.not-found-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(34px, 5vw, 52px);
+  line-height: 1;
+  color: var(--primary);
+}
+.not-found-title .hand-text {
+  font-size: 1.1em;
+}
+.not-found-blurb {
+  font-size: 16px;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Skeletons */
+.detail-skel-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.skel-chip {
+  height: 32px;
+  width: 8rem;
+  background: color-mix(in srgb, var(--primary) 10%, white);
+  border-radius: 999px;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+.skel-title {
+  height: 64px;
+  width: 80%;
+  background: color-mix(in srgb, var(--primary) 10%, white);
+  border-radius: 24px;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+.skel-meta-row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+}
+.skel-meta {
+  height: 110px;
+  background: color-mix(in srgb, var(--primary) 10%, white);
+  border-radius: 22px;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+.skel-block {
+  height: 220px;
+  background: color-mix(in srgb, var(--primary) 10%, white);
+  border-radius: 28px;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+.skel-photo {
+  aspect-ratio: 5 / 4;
+  background: color-mix(in srgb, var(--primary) 10%, white);
+  border-radius: 28px;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+</style>

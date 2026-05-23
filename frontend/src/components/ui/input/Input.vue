@@ -33,7 +33,7 @@ const props = withDefaults(
     :disabled="disabled"
     :class="
       cn(
-        'flex h-12 w-full rounded-2xl border border-input bg-white/80 px-4 py-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+        'flex h-12 w-full rounded-2xl border-2 border-primary bg-white px-4 py-3 text-sm font-medium text-primary transition-all duration-150 outline-none placeholder:text-muted-foreground placeholder:font-normal focus-visible:border-[var(--color-coral)] focus-visible:shadow-[3px_3px_0_var(--color-coral)] disabled:cursor-not-allowed disabled:opacity-50',
         props.class,
       )
     "
