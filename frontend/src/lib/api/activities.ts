@@ -9,6 +9,7 @@ import type {
 export interface PublicActivitiesQuery {
   page: number
   size?: number
+  query?: string
 }
 
 export interface AdminActivitiesQuery {
@@ -34,10 +35,14 @@ export interface ActivityUpsertPayload {
 export async function getPublicActivities({
   page,
   size = 12,
+  query,
 }: PublicActivitiesQuery): Promise<PageResponse<ActivityResponse>> {
   const params = new URLSearchParams()
   params.set('page', String(page))
   params.set('size', String(size))
+  if (query) {
+    params.set('q', query)
+  }
   params.append('sort', 'startAt,asc')
   params.append('sort', 'createdAt,desc')
 

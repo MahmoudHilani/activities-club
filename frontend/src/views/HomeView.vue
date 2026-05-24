@@ -138,6 +138,7 @@ const activityCountLabel = computed(() => {
           v-model="query"
           type="text"
           aria-label="Search activities"
+          maxlength="120"
         />
         <button type="submit" class="search-button">Search</button>
       </form>

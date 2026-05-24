@@ -469,6 +469,31 @@ class AuthAndActivityIntegrationTest {
     }
 
     @Test
+    void publicActivitiesEndpointSearchesPublishedPublicActivityTextBeforePaging() throws Exception {
+        String adminToken = createAdminToken();
+        long yogaActivityId = createAdminActivity(adminToken, "Slow Yoga", "image/png", "poster.png", "PUBLIC", 12, "0");
+        long climbingActivityId = createAdminActivity(adminToken, "Climbing Workshop", "image/png", "poster.png", "PUBLIC", 12, "0");
+        long privateActivityId = createAdminActivity(adminToken, "Yoga Committee", "image/png", "poster.png", "PRIVATE", 12, "0");
+
+        publishActivity(adminToken, yogaActivityId).andExpect(status().isOk());
+        publishActivity(adminToken, climbingActivityId).andExpect(status().isOk());
+        publishActivity(adminToken, privateActivityId).andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/activities/public")
+                .param("q", "YOGA")
+                .param("size", "1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content", hasSize(1)))
+            .andExpect(jsonPath("$.content[0].title").value("Slow Yoga"));
+
+        mockMvc.perform(get("/api/activities/public")
+                .param("q", "%"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
     void publicActivityDetailEndpointReturnsPublishedPublicActivityForAnonymousUsers() throws Exception {
         String adminToken = createAdminToken();
         long activityId = createAdminActivity(adminToken, "Open Mic", "image/png", "poster.png", "PUBLIC", 2, "0");

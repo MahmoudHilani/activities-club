@@ -1,4 +1,5 @@
 import { screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 
@@ -50,6 +51,26 @@ describe('HomeView', () => {
     })
 
     expect(await screen.findByText('No public activities are published yet.')).toBeTruthy()
+  })
+
+  it('sends a homepage search to the activities page', async () => {
+    server.use(
+      http.get('http://localhost:8080/api/activities/public', () =>
+        HttpResponse.json(buildPage([])),
+      ),
+    )
+
+    const user = userEvent.setup()
+    const { router } = await renderRoute({
+      route: '/',
+      homeComponent: HomeView,
+    })
+
+    await user.type(screen.getByRole('textbox', { name: 'Search activities' }), '  yoga  ')
+    await user.click(screen.getByRole('button', { name: 'Search' }))
+
+    expect(router.currentRoute.value.name).toBe('activities')
+    expect(router.currentRoute.value.query.q).toBe('yoga')
   })
 
   it('shows a retry action when homepage activities cannot be loaded', async () => {

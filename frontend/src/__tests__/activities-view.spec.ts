@@ -171,6 +171,62 @@ describe('ActivitiesView', () => {
     expect(await screen.findByText('Open Mic')).toBeTruthy()
   })
 
+  it('loads a homepage search from the route and sends it to the public feed', async () => {
+    server.use(
+      http.get('http://localhost:8080/api/activities/public', ({ request }) => {
+        const query = new URL(request.url).searchParams
+
+        expect(query.get('q')).toBe('yoga')
+        return HttpResponse.json(buildPage([buildActivity({ title: 'Slow Yoga' })]))
+      }),
+    )
+
+    await renderRoute({
+      route: '/activities?q=yoga',
+      activitiesComponent: ActivitiesView,
+    })
+
+    expect(await screen.findByDisplayValue('yoga')).toBeTruthy()
+    expect(await screen.findByText('Slow Yoga')).toBeTruthy()
+  })
+
+  it('submits a new search on the activities page and resets pagination', async () => {
+    server.use(
+      http.get('http://localhost:8080/api/activities/public', ({ request }) => {
+        const query = new URL(request.url).searchParams
+        const search = query.get('q')
+
+        if (search === 'climb') {
+          expect(query.get('page')).toBe('0')
+          return HttpResponse.json(buildPage([buildActivity({ title: 'Climbing Workshop' })]))
+        }
+
+        return HttpResponse.json(
+          buildPage([buildActivity()], {
+            totalPages: 2,
+            last: false,
+          }),
+        )
+      }),
+    )
+
+    const user = userEvent.setup()
+    const { router } = await renderRoute({
+      route: '/activities?page=2',
+      activitiesComponent: ActivitiesView,
+    })
+
+    const input = await screen.findByRole('searchbox', { name: 'Search activities' })
+    await user.type(input, 'climb')
+    await user.click(screen.getByRole('button', { name: 'Search' }))
+
+    await waitFor(() => {
+      expect(router.currentRoute.value.query.q).toBe('climb')
+      expect(router.currentRoute.value.query.page).toBeUndefined()
+    })
+    expect(await screen.findByText('Climbing Workshop')).toBeTruthy()
+  })
+
   it('shows the empty state when no activities are returned', async () => {
     server.use(
       http.get('http://localhost:8080/api/activities/public', () =>

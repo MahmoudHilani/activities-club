@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,10 +39,19 @@ public class ActivityService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ActivityResponse> listPublic(Pageable pageable, AuthenticatedUser currentUser) {
+    public Page<ActivityResponse> listPublic(Pageable pageable, String search, AuthenticatedUser currentUser) {
         Long currentUserId = currentUser == null ? null : currentUser.id();
-        return activityRepository
-            .findByStatusAndVisibility(ActivityStatus.PUBLISHED, ActivityVisibility.PUBLIC, pageable)
+        String normalizedSearch = normalizeSearch(search);
+        Page<Activity> activities = normalizedSearch == null
+            ? activityRepository.findByStatusAndVisibility(ActivityStatus.PUBLISHED, ActivityVisibility.PUBLIC, pageable)
+            : activityRepository.findPublicMatchingSearch(
+                ActivityStatus.PUBLISHED,
+                ActivityVisibility.PUBLIC,
+                normalizedSearch,
+                pageable
+            );
+
+        return activities
             .map(activity -> toResponse(activity, currentUserId));
     }
 
@@ -263,6 +273,19 @@ public class ActivityService {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeSearch(String search) {
+        String normalized = trimToNull(search);
+        if (normalized == null) {
+            return null;
+        }
+
+        return normalized
+            .toLowerCase(Locale.ROOT)
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_");
     }
 
     private Comparator<ActivityReservation> adminReservationComparator() {

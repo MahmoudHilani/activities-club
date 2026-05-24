@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query'
-import { ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { ChevronLeft, ChevronRight, LoaderCircle, Search } from 'lucide-vue-next'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import ActivityCard from '@/components/ActivityCard.vue'
@@ -20,14 +20,26 @@ function parsePage(value: unknown): number {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 1
 }
 
+function parseSearch(value: unknown): string {
+  const search = Array.isArray(value) ? value[0] : value
+  return typeof search === 'string' ? search.trim() : ''
+}
+
 const currentPage = computed(() => parsePage(route.query.page))
+const currentSearch = computed(() => parseSearch(route.query.q))
+const searchTerm = ref(currentSearch.value)
+
+watch(currentSearch, (search) => {
+  searchTerm.value = search
+})
 
 const activitiesQuery = useQuery(() => ({
-  queryKey: ['public-activities', currentPage.value],
+  queryKey: ['public-activities', currentPage.value, currentSearch.value],
   queryFn: () =>
     getPublicActivities({
       page: currentPage.value - 1,
       size: PAGE_SIZE,
+      query: currentSearch.value || undefined,
     }),
   placeholderData: (previousData) => previousData,
 }))
@@ -44,6 +56,15 @@ const isPending = computed(() => activitiesQuery.isPending.value)
 const hasPrevious = computed(() => currentPage.value > 1)
 const hasNext = computed(() => currentPage.value < totalPages.value && !pageData.value?.last)
 
+async function submitSearch(): Promise<void> {
+  const query = searchTerm.value.trim()
+
+  await router.replace({
+    name: 'activities',
+    query: query ? { q: query } : {},
+  })
+}
+
 async function setPage(page: number): Promise<void> {
   if (page < 1 || page > totalPages.value) {
     return
@@ -51,13 +72,29 @@ async function setPage(page: number): Promise<void> {
 
   await router.replace({
     name: 'activities',
-    query: page === 1 ? {} : { page: String(page) },
+    query: {
+      ...(currentSearch.value ? { q: currentSearch.value } : {}),
+      ...(page === 1 ? {} : { page: String(page) }),
+    },
   })
 }
 </script>
 
 <template>
   <section class="page-shell">
+    <form class="search-bar" role="search" @submit.prevent="submitSearch">
+      <Search class="search-icon" aria-hidden="true" />
+      <input
+        v-model="searchTerm"
+        aria-label="Search activities"
+        class="search-input"
+        maxlength="120"
+        placeholder="Search activities or locations"
+        type="search"
+      />
+      <button class="search-button" type="submit">Search</button>
+    </form>
+
     <header class="page-hero">
       <h1 class="page-title">
         <span class="display-text">Everything</span>
@@ -88,11 +125,17 @@ async function setPage(page: number): Promise<void> {
 
     <div v-else-if="activities.length === 0" class="empty-state">
       <div class="empty-blob" aria-hidden="true" />
-      <p class="empty-title">No activities published yet</p>
-      <p class="empty-sub">
-        When organisers publish an activity, it'll land here. Check back soon — or follow us on
-        the WhatsApp group.
-      </p>
+      <template v-if="currentSearch">
+        <p class="empty-title">No activities found</p>
+        <p class="empty-sub">Try a different search or browse all public activities.</p>
+      </template>
+      <template v-else>
+        <p class="empty-title">No activities published yet</p>
+        <p class="empty-sub">
+          When organisers publish an activity, it'll land here. Check back soon — or follow us on
+          the WhatsApp group.
+        </p>
+      </template>
     </div>
 
     <template v-else>
@@ -158,6 +201,57 @@ async function setPage(page: number): Promise<void> {
 }
 .page-title .hand-text {
   font-size: 1.12em;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: min(100%, 42rem);
+  max-width: 42rem;
+  margin-inline: auto;
+  padding: 0.375rem;
+  background: white;
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  box-shadow: 4px 4px 0 var(--color-ochre);
+}
+.search-icon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.875rem;
+  color: var(--primary);
+}
+.search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.625rem 0.5rem;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  outline: none;
+}
+.search-input::placeholder {
+  color: var(--muted-foreground);
+}
+.search-button {
+  flex-shrink: 0;
+  padding: 0.75rem 1.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: background 0.2s;
+}
+.search-button:hover {
+  background: var(--color-coral);
 }
 
 .activity-grid {
