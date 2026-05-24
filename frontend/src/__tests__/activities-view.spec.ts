@@ -76,6 +76,30 @@ describe('ActivitiesView', () => {
     expect(screen.queryByText(fullLocation)).toBeNull()
   })
 
+  it('only shows a card badge for overnight activities', async () => {
+    server.use(
+      http.get('http://localhost:8080/api/activities/public', () =>
+        HttpResponse.json(
+          buildPage([
+            buildActivity({ id: 1, title: 'Chess Night', isOvernight: false }),
+            buildActivity({ id: 2, title: 'Surf Weekend', isOvernight: true }),
+          ]),
+        ),
+      ),
+    )
+
+    await renderRoute({
+      route: '/activities',
+      activitiesComponent: ActivitiesView,
+    })
+
+    expect(await screen.findByText('Chess Night')).toBeTruthy()
+    expect(document.querySelectorAll('.craft-tag')).toHaveLength(1)
+    const overnightBadge = screen.getByText(/overnight/i)
+    expect(overnightBadge.querySelector('svg')).toBeTruthy()
+    expect(overnightBadge.textContent?.trim()).toBe('overnight')
+  })
+
   it('hides pagination controls when all activities fit on one page', async () => {
     server.use(
       http.get('http://localhost:8080/api/activities/public', () =>

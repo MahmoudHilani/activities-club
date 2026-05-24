@@ -32,10 +32,6 @@ const accentTone = computed<'coral' | 'ochre' | 'leaf'>(() => {
     | 'leaf'
 })
 
-const categoryLabel = computed(() => {
-  if (props.activity.isOvernight) return '🌙 overnight'
-  return '⛰ activity'
-})
 </script>
 
 <template>
@@ -46,7 +42,15 @@ const categoryLabel = computed(() => {
     <article class="activity-card" :class="`activity-card-${accentTone}`">
       <div class="card-photo-wrap">
         <img :src="activity.imageUrl" :alt="activity.title" class="card-photo" />
-        <span class="craft-tag" :class="`craft-tag-${accentTone}`">{{ categoryLabel }}</span>
+        <span v-if="activity.isOvernight" class="craft-tag" :class="`craft-tag-${accentTone}`">
+          <svg class="tag-icon" viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M10.7 1.2a6.8 6.8 0 1 0 4.05 10.6A5.15 5.15 0 1 1 10.7 1.2Z"
+            />
+          </svg>
+          overnight
+        </span>
       </div>
 
       <div class="card-body">
@@ -137,7 +141,15 @@ const categoryLabel = computed(() => {
   position: absolute;
   top: 14px;
   left: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   box-shadow: 2px 2px 0 var(--primary);
+}
+.tag-icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
 }
 
 .card-body {
