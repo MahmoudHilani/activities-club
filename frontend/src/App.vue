@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { computed } from 'vue'
+import { RouterView, useRoute } from 'vue-router'
 
 import AdminCreateActivityFab from '@/components/admin/AdminCreateActivityFab.vue'
+import AppFooter from '@/components/AppFooter.vue'
 import AppHeader from '@/components/AppHeader.vue'
+
+const route = useRoute()
+const showFooter = computed(() => !route.path.startsWith('/admin'))
 </script>
 
 <template>
@@ -22,5 +27,7 @@ import AppHeader from '@/components/AppHeader.vue'
     >
       <RouterView />
     </main>
+
+    <AppFooter v-if="showFooter" />
   </div>
 </template>

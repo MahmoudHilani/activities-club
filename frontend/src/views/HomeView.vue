@@ -312,7 +312,7 @@ const activityCountLabel = computed(() => {
   background:
     radial-gradient(680px 480px at 8% 6%, rgba(255, 122, 89, 0.16), transparent 60%),
     radial-gradient(760px 560px at 92% 10%, rgba(245, 176, 66, 0.16), transparent 60%),
-    radial-gradient(840px 600px at 50% 92%, rgba(91, 165, 114, 0.12), transparent 60%);
+    radial-gradient(840px 480px at 50% calc(100% - 320px), rgba(91, 165, 114, 0.12), transparent 60%);
 }
 
 .hero,

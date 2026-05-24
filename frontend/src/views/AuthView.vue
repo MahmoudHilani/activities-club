@@ -137,6 +137,7 @@ const subCopy = computed(() =>
   padding: 6px 18px;
   border-radius: 999px;
   box-shadow: 2px 2px 0 var(--primary);
+  white-space: nowrap;
 }
 .auth-decor-sticker-coral {
   background: var(--color-coral);
