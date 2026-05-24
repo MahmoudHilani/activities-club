@@ -90,7 +90,7 @@ const previewLocationLabel = computed(() => {
 const editorHeading = computed(() =>
   isEditing.value
     ? currentActivity.value?.title || 'Edit activity details'
-    : 'Draft a new activity',
+    : 'Create a new activity draft',
 )
 const editorSubheading = computed(() =>
   isEditing.value
@@ -98,7 +98,7 @@ const editorSubheading = computed(() =>
     : 'Block out the essentials here, then come back to publish when it is ready.',
 )
 const submitLabel = computed(() =>
-  isEditing.value ? 'Save changes' : 'Create draft',
+  isEditing.value ? 'Save changes' : 'Create activity draft',
 )
 
 const saveMutation = useMutation(() => ({
@@ -257,100 +257,28 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="editor-shell">
-    <RouterLink to="/admin/activities" class="back-pill">
-      <ArrowLeft class="h-4 w-4" />
-      <span>back to the desk</span>
-    </RouterLink>
+    <header class="editor-topbar">
+      <RouterLink to="/admin/activities" class="back-pill">
+        <ArrowLeft class="h-4 w-4" />
+        <span>back to the desk</span>
+      </RouterLink>
+    </header>
 
-    <div class="editor-grid">
-      <!-- Left: titles -->
-      <div class="editor-intro">
-        <h1 class="editor-title">
-          <span class="display-text">{{ editorHeading }}</span>
-        </h1>
-        <p class="editor-sub">{{ editorSubheading }}</p>
-
-        <div class="hint-row">
-          <div class="hint-card">
-            <p class="hint-label">workflow</p>
-            <p class="hint-text">
-              {{
-                isEditing
-                  ? 'Refine details and keep the draft current.'
-                  : 'Start with the essentials and save a draft first.'
-              }}
-            </p>
-          </div>
-          <div class="hint-card">
-            <p class="hint-label hint-label-ochre">card image</p>
-            <p class="hint-text">
-              A clear landscape shot reads best on the activity card.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right: preview -->
-      <div class="preview-card">
-        <div v-if="isActivityLoading" class="preview-loading">
-          <LoaderCircle class="h-5 w-5 animate-spin" />
-          <span>Fetching the activity…</span>
-        </div>
-
-        <Alert v-else-if="activityQuery.isError.value" variant="destructive">
-          {{ mapActivitiesError(activityQuery.error.value) }}
-        </Alert>
-
-        <template v-else>
-          <div class="preview-tags">
-            <span class="craft-tag craft-tag-coral preview-tag-rot">
-              {{ isEditing ? (currentActivity?.status ?? 'draft').toLowerCase() : 'new draft' }}
-            </span>
-            <span class="craft-pill">{{ formatTicketPrice(form.ticketPrice || '0') }}</span>
-            <span class="craft-pill">{{ form.visibility.toLowerCase() }}</span>
-            <span v-if="form.isOvernight" class="craft-pill">overnight</span>
-          </div>
-
-          <div v-if="previewImageUrl" class="preview-image-wrap">
-            <img
-              :src="previewImageUrl"
-              :alt="form.title || 'Activity preview'"
-              class="preview-image"
-            />
-          </div>
-          <div v-else class="preview-placeholder">
-            <ImagePlus class="h-7 w-7" />
-            <p class="preview-placeholder-title">Preview your card image</p>
-            <p class="preview-placeholder-sub">
-              Add an image to check how the activity will read on the listings page.
-            </p>
-          </div>
-
-          <div class="preview-meta">
-            <p>{{ formatDateRange(form.startAt || null, form.endAt || null) }}</p>
-            <p>{{ previewLocationLabel }}</p>
-            <p>{{ form.capacity ? `${form.capacity} spaces planned` : 'open capacity' }}</p>
-            <div v-if="isEditing && currentActivity" class="preview-links">
-              <RouterLink
-                class="preview-link"
-                :to="{
-                  name: 'admin-activity-reservations',
-                  params: { activityId: currentActivity.id },
-                }"
-              >
-                View reservations →
-              </RouterLink>
-              <RouterLink
-                class="preview-link"
-                :to="{ name: 'activity-detail', params: { activityId: currentActivity.id } }"
-              >
-                Preview page →
-              </RouterLink>
-            </div>
-          </div>
-        </template>
-      </div>
+    <div class="editor-intro">
+      <h1 class="editor-title">
+        <span class="display-text">{{ editorHeading }}</span>
+      </h1>
+      <p class="editor-sub">{{ editorSubheading }}</p>
     </div>
+
+    <div v-if="isActivityLoading" class="loading-row">
+      <LoaderCircle class="h-5 w-5 animate-spin" />
+      <span>Fetching the activity…</span>
+    </div>
+
+    <Alert v-else-if="activityQuery.isError.value" variant="destructive">
+      {{ mapActivitiesError(activityQuery.error.value) }}
+    </Alert>
 
     <Alert v-if="successMessage" class="success-alert">
       {{ successMessage }}
@@ -365,27 +293,58 @@ onBeforeUnmount(() => {
           {{ formError }}
         </Alert>
 
-        <div class="field-row">
-          <label class="field">
-            <span class="field-label">
-              <span class="field-label-text">Title</span>
-              <span class="field-label-hint">keep it punchy</span>
-            </span>
-            <input v-model="form.title" class="craft-field" maxlength="120" required />
-          </label>
-          <label class="field">
-            <span class="field-label">
-              <span class="field-label-text">Ticket price</span>
-              <span class="field-label-hint">in euro, 0 is free</span>
-            </span>
+        <div class="hero-row">
+          <label class="image-drop">
+            <span class="sr-only">Activity image</span>
+            <div v-if="previewImageUrl" class="image-drop-frame has-image">
+              <img
+                :src="previewImageUrl"
+                :alt="form.title || 'Activity preview'"
+                class="image-drop-img"
+              />
+              <span class="image-drop-overlay">
+                <ImagePlus class="h-5 w-5" />
+                <span>change image</span>
+              </span>
+            </div>
+            <div v-else class="image-drop-frame is-empty">
+              <ImagePlus class="h-8 w-8" />
+              <p class="image-drop-title">Drop an activity image here</p>
+              <p class="image-drop-sub">jpg / png / webp · landscape reads best</p>
+            </div>
             <input
-              v-model="form.ticketPrice"
-              class="craft-field"
-              min="0"
-              step="0.01"
-              type="number"
+              :key="fileInputKey"
+              accept="image/jpeg,image/png,image/webp"
+              class="image-drop-input"
+              type="file"
+              @change="handleImageChange"
             />
           </label>
+
+          <div class="hero-aside">
+            <div class="preview-tags">
+              <span class="craft-tag craft-tag-coral preview-tag-rot">
+                {{ isEditing ? (currentActivity?.status ?? 'draft').toLowerCase() : 'new draft' }}
+              </span>
+              <span class="craft-pill">{{ formatTicketPrice(form.ticketPrice || '0') }}</span>
+              <span class="craft-pill">{{ form.visibility.toLowerCase() }}</span>
+              <span v-if="form.isOvernight" class="craft-pill">overnight</span>
+            </div>
+
+            <div class="hero-quickfacts">
+              <p>{{ formatDateRange(form.startAt || null, form.endAt || null) }}</p>
+              <p>{{ previewLocationLabel }}</p>
+              <p>{{ form.capacity ? `${form.capacity} spaces planned` : 'open capacity' }}</p>
+            </div>
+
+            <label class="field hero-title-field">
+              <span class="field-label">
+                <span class="field-label-text">Title</span>
+                <span class="field-label-hint">keep it punchy</span>
+              </span>
+              <input v-model="form.title" class="craft-field" maxlength="120" required />
+            </label>
+          </div>
         </div>
 
         <label class="field">
@@ -417,14 +376,6 @@ onBeforeUnmount(() => {
           </label>
         </div>
 
-        <label class="check-row">
-          <input v-model="form.isOvernight" type="checkbox" />
-          <span>
-            <span class="check-title">Overnight activity</span>
-            <span class="check-hint">we'll sleep somewhere not home</span>
-          </span>
-        </label>
-
         <div class="field-row">
           <label class="field">
             <span class="field-label">
@@ -452,6 +403,22 @@ onBeforeUnmount(() => {
           </label>
           <label class="field">
             <span class="field-label">
+              <span class="field-label-text">Ticket price</span>
+              <span class="field-label-hint">in euro, 0 is free</span>
+            </span>
+            <input
+              v-model="form.ticketPrice"
+              class="craft-field"
+              min="0"
+              step="0.01"
+              type="number"
+            />
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">
               <span class="field-label-text">Visibility</span>
               <span class="field-label-hint">who can find it</span>
             </span>
@@ -469,6 +436,10 @@ onBeforeUnmount(() => {
                 </SelectItem>
               </SelectContent>
             </Select>
+          </label>
+          <label class="check-row">
+            <input v-model="form.isOvernight" type="checkbox" />
+            <span class="check-title">Overnight activity</span>
           </label>
         </div>
 
@@ -495,20 +466,6 @@ onBeforeUnmount(() => {
           </label>
         </div>
 
-        <label class="field">
-          <span class="field-label">
-            <span class="field-label-text">Activity image</span>
-            <span class="field-label-hint">jpg / png / webp</span>
-          </span>
-          <input
-            :key="fileInputKey"
-            accept="image/jpeg,image/png,image/webp"
-            class="craft-field"
-            type="file"
-            @change="handleImageChange"
-          />
-        </label>
-
         <div class="form-actions">
           <Button size="lg" type="button" variant="outline" @click="clearLocalChanges">
             {{ isEditing ? 'Reset changes' : 'Clear form' }}
@@ -534,12 +491,19 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   flex: 1;
-  gap: 1.75rem;
-  max-width: 80rem;
+  gap: 1.25rem;
+  max-width: 72rem;
   margin: 0 auto;
   width: 100%;
 }
 
+.editor-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
 .back-pill {
   display: inline-flex;
   align-items: center;
@@ -561,178 +525,54 @@ onBeforeUnmount(() => {
   transform: translate(-2px, -2px);
   box-shadow: 4px 4px 0 var(--color-coral);
 }
-
-.editor-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 28px;
-  align-items: start;
+.topbar-links {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
 }
-@media (min-width: 1100px) {
-  .editor-grid {
-    grid-template-columns: 0.95fr 1.05fr;
-  }
+.topbar-link {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--color-coral);
+  text-decoration: none;
+}
+.topbar-link:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
 }
 
 .editor-intro {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
   align-items: flex-start;
 }
 .editor-title {
-  margin: 4px 0 0;
+  margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(36px, 5vw, 56px);
+  font-size: clamp(32px, 4.4vw, 48px);
   line-height: 0.98;
   color: var(--primary);
   letter-spacing: -0.01em;
   word-break: break-word;
 }
 .editor-sub {
-  max-width: 50ch;
-  font-size: 16px;
+  max-width: 60ch;
+  font-size: 15.5px;
   color: var(--muted-foreground);
   line-height: 1.55;
   margin: 0;
 }
 
-.hint-row {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
-  width: 100%;
-}
-@media (min-width: 640px) {
-  .hint-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-.hint-card {
-  background: white;
-  border: 2px solid var(--primary);
-  border-radius: 22px;
-  padding: 16px;
-  box-shadow: 3px 3px 0 var(--color-leaf);
-}
-.hint-label {
-  margin: 0 0 6px;
-  font-family: var(--font-hand);
-  font-weight: 700;
-  font-size: 19px;
-  color: var(--color-leaf);
-}
-.hint-label-ochre {
-  color: var(--color-ochre);
-}
-.hint-text {
-  margin: 0;
-  font-size: 14.5px;
-  color: var(--primary);
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-.preview-card {
-  background: white;
-  border: 2px solid var(--primary);
-  border-radius: 28px;
-  padding: 24px;
-  box-shadow:
-    5px 5px 0 var(--color-coral),
-    10px 10px 0 var(--color-ochre);
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-.preview-loading {
+.loading-row {
   display: flex;
   align-items: center;
   gap: 10px;
   color: var(--muted-foreground);
   font-weight: 600;
-}
-.preview-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-.preview-tag-rot {
-  transform: rotate(-3deg);
-}
-.preview-image-wrap {
-  border: 2px solid var(--primary);
-  border-radius: 22px;
-  overflow: hidden;
-  padding: 0;
-}
-.preview-image {
-  display: block;
-  width: 100%;
-  height: 18rem;
-  object-fit: cover;
-}
-.preview-placeholder {
-  border: 2px dashed color-mix(in srgb, var(--primary) 30%, white);
-  border-radius: 22px;
-  background: color-mix(in srgb, var(--color-ochre) 8%, white);
-  padding: 36px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
-  text-align: center;
-}
-.preview-placeholder svg {
-  color: var(--color-coral);
-}
-.preview-placeholder-title {
-  margin: 6px 0 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 22px;
-  color: var(--primary);
-}
-.preview-placeholder-sub {
-  margin: 0;
-  font-size: 14px;
-  color: var(--muted-foreground);
-  max-width: 40ch;
-  line-height: 1.5;
-}
-
-.preview-meta {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 6px;
-  font-size: 14px;
-  color: var(--primary);
-  border-top: 1.5px dashed color-mix(in srgb, var(--primary) 25%, transparent);
-  padding-top: 14px;
-}
-@media (min-width: 640px) {
-  .preview-meta {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-.preview-meta p {
-  margin: 0;
-  word-break: break-word;
-}
-.preview-links {
-  display: flex;
-  gap: 14px;
-  grid-column: 1 / -1;
-  margin-top: 4px;
-}
-.preview-link {
-  font-family: var(--font-hand);
-  font-weight: 700;
-  font-size: 18px;
-  color: var(--color-coral);
-  text-decoration: none;
 }
 
 .success-alert {
@@ -745,14 +585,14 @@ onBeforeUnmount(() => {
   background: white;
   border: 2px solid var(--primary);
   border-radius: 32px;
-  padding: 28px;
+  padding: 24px;
   box-shadow:
     4px 4px 0 var(--color-leaf),
     8px 8px 0 var(--primary);
 }
 @media (min-width: 640px) {
   .form-card {
-    padding: 36px;
+    padding: 32px;
   }
 }
 
@@ -760,6 +600,160 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 22px;
+}
+
+/* Hero row: image + aside (tags / facts / title) */
+.hero-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 22px;
+  align-items: stretch;
+}
+@media (min-width: 900px) {
+  .hero-row {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  }
+}
+
+.image-drop {
+  display: block;
+  cursor: pointer;
+  position: relative;
+}
+.image-drop-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.image-drop-frame {
+  position: relative;
+  border-radius: 24px;
+  border: 2px solid var(--primary);
+  overflow: hidden;
+  min-height: 18rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: color-mix(in srgb, var(--color-ochre) 8%, white);
+  box-shadow: 4px 4px 0 var(--color-coral);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.image-drop:hover .image-drop-frame {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--color-coral);
+}
+.image-drop-frame.is-empty {
+  flex-direction: column;
+  gap: 8px;
+  padding: 32px 24px;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--primary) 35%, white);
+}
+.image-drop-frame.is-empty svg {
+  color: var(--color-coral);
+}
+.image-drop-title {
+  margin: 6px 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 22px;
+  color: var(--primary);
+}
+.image-drop-sub {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-coral);
+}
+.image-drop-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 18rem;
+  object-fit: cover;
+}
+.image-drop-overlay {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: white;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 700;
+  font-size: 13px;
+  box-shadow: 2px 2px 0 var(--color-coral);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+.image-drop:hover .image-drop-overlay,
+.image-drop:focus-within .image-drop-overlay {
+  opacity: 1;
+}
+.image-drop-frame.has-image {
+  background: var(--primary);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hero-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  justify-content: flex-start;
+}
+
+.preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.preview-tag-rot {
+  transform: rotate(-3deg);
+}
+
+.hero-quickfacts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1.5px dashed color-mix(in srgb, var(--primary) 28%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--color-leaf) 6%, white);
+  font-size: 14px;
+  color: var(--primary);
+}
+.hero-quickfacts p {
+  margin: 0;
+  word-break: break-word;
+}
+
+.hero-title-field {
+  margin-top: auto;
 }
 
 .field-row {
@@ -799,13 +793,15 @@ onBeforeUnmount(() => {
 
 .check-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 14px;
   background: color-mix(in srgb, var(--color-ochre) 12%, white);
   border: 2px solid var(--primary);
-  border-radius: 22px;
-  padding: 14px 16px;
+  border-radius: 18px;
+  padding: 0 16px;
   cursor: pointer;
+  min-height: 44px;
+  align-self: end;
 }
 .check-row input[type='checkbox'] {
   appearance: none;
@@ -818,7 +814,6 @@ onBeforeUnmount(() => {
   place-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  margin-top: 1px;
 }
 .check-row input[type='checkbox']:checked {
   background: var(--color-coral);
@@ -835,7 +830,7 @@ onBeforeUnmount(() => {
   display: block;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 20px;
+  font-size: 18px;
   color: var(--primary);
   line-height: 1.1;
 }
@@ -843,7 +838,7 @@ onBeforeUnmount(() => {
   display: block;
   font-family: var(--font-hand);
   font-weight: 700;
-  font-size: 16px;
+  font-size: 14px;
   color: var(--color-coral);
 }
 

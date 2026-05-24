@@ -93,16 +93,7 @@ const isAdminUsersRoute = computed(() => route.path.startsWith('/admin/users'))
   min-height: 4.5rem;
   margin: 0 auto;
   padding: 0 1.25rem;
-  border: 1.5px solid color-mix(in srgb, var(--primary) 15%, transparent);
-  border-radius: 999px;
-  background:
-    radial-gradient(150px 86px at 8% 20%, rgba(255, 122, 89, 0.14), transparent 72%),
-    radial-gradient(180px 90px at 94% 20%, rgba(245, 176, 66, 0.18), transparent 70%),
-    rgba(255, 255, 255, 0.62);
-  box-shadow:
-    0 14px 34px rgba(36, 62, 128, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(18px);
+  background: transparent;
 }
 @media (min-width: 640px) {
   .app-header {

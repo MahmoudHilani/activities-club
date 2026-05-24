@@ -302,7 +302,8 @@ const activityCountLabel = computed(() => {
 
 .home-bg {
   position: absolute;
-  inset-block: 0;
+  top: -10rem;
+  bottom: 0;
   left: 50%;
   width: 100vw;
   transform: translateX(-50%);
