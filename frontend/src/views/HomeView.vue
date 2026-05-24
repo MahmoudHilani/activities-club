@@ -1,20 +1,16 @@
 <script setup lang="ts">
+import { useQuery } from '@tanstack/vue-query'
 import { Search } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-type DemoActivity = {
-  id: string
-  title: string
-  when: string
-  category: { label: string; tone: 'coral' | 'ochre' | 'leaf' }
-  photo: string
-  blurb: string
-  going: number
-  avatars: string[]
-  price: string
-  isFree?: boolean
-}
+import ActivityCard from '@/components/ActivityCard.vue'
+import { Alert } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { getPublicActivities } from '@/lib/api/activities'
+import { mapActivitiesError } from '@/lib/api/errors'
+
+const HOME_ACTIVITY_COUNT = 3
 
 const router = useRouter()
 const route = useRoute()
@@ -40,57 +36,29 @@ function submitSearch(): void {
   })
 }
 
-const activities: DemoActivity[] = [
-  {
-    id: 'spinc',
-    title: 'Sunrise Spinc loop',
-    when: 'sat 14 mar · 06:00 bus',
-    category: { label: '⛰ adventure', tone: 'coral' },
-    photo: 'https://picsum.photos/seed/spinc-friendly/700/520',
-    blurb:
-      "Six glorious hours above Glendalough's upper lake. We bring the bus, you bring the boots and breakfast bar.",
-    going: 23,
-    avatars: [
-      'https://i.pravatar.cc/56?img=11',
-      'https://i.pravatar.cc/56?img=32',
-      'https://i.pravatar.cc/56?img=47',
-    ],
-    price: '€12',
-  },
-  {
-    id: 'yoga',
-    title: 'Slow yoga with Niamh',
-    when: 'every tue · 18:30',
-    category: { label: '✿ wellness', tone: 'ochre' },
-    photo: 'https://picsum.photos/seed/yoga-friendly/700/520',
-    blurb:
-      'Restorative practice in the South Circular studio. Bolsters and blankets supplied, no pretzel poses required.',
-    going: 14,
-    avatars: [
-      'https://i.pravatar.cc/56?img=15',
-      'https://i.pravatar.cc/56?img=23',
-      'https://i.pravatar.cc/56?img=5',
-    ],
-    price: 'free',
-    isFree: true,
-  },
-  {
-    id: 'kayak',
-    title: 'Sea-kayak around Howth',
-    when: 'sun 22 mar · 09:30',
-    category: { label: '🌊 adventure', tone: 'leaf' },
-    photo: 'https://picsum.photos/seed/sea-kayak-friendly/700/520',
-    blurb:
-      'Half-day paddle around the cliffs. All gear included, plus a steaming hot chocolate when we land.',
-    going: 9,
-    avatars: [
-      'https://i.pravatar.cc/56?img=20',
-      'https://i.pravatar.cc/56?img=44',
-      'https://i.pravatar.cc/56?img=8',
-    ],
-    price: '€28',
-  },
-]
+const activitiesQuery = useQuery(() => ({
+  queryKey: ['public-activities', 'home'],
+  queryFn: () => getPublicActivities({ page: 0, size: HOME_ACTIVITY_COUNT }),
+}))
+
+const activities = computed(() => activitiesQuery.data.value?.content ?? [])
+const totalActivities = computed(() => activitiesQuery.data.value?.totalElements ?? 0)
+const isInitialLoading = computed(
+  () => activitiesQuery.isPending.value && activities.value.length === 0,
+)
+const isActivitiesError = computed(() => activitiesQuery.isError.value)
+const activitiesError = computed(() => activitiesQuery.error.value)
+const activityCountLabel = computed(() => {
+  if (isInitialLoading.value) {
+    return 'Finding activities...'
+  }
+
+  if (isActivitiesError.value) {
+    return 'Find an activity to try'
+  }
+
+  return `${totalActivities.value} ${totalActivities.value === 1 ? 'activity' : 'activities'} to explore`
+})
 </script>
 
 <template>
@@ -112,9 +80,7 @@ const activities: DemoActivity[] = [
         </div>
 
         <div class="hero-center">
-          <div class="hero-eyebrow">
-            <span class="hero-eyebrow-dot" /> 47 things happening this week
-          </div>
+          <div class="hero-eyebrow"><span class="hero-eyebrow-dot" /> {{ activityCountLabel }}</div>
 
           <h1 class="hero-headline">
             <span class="ink">Find</span> your <span class="scribble">people</span>,<br />
@@ -128,7 +94,7 @@ const activities: DemoActivity[] = [
 
           <div class="hero-cta">
             <RouterLink :to="{ name: 'activities' }" class="hero-cta-btn">
-              See what's on this week
+              See all activities
             </RouterLink>
             <span class="hero-cta-note">
               <svg class="hero-cta-arrow" aria-hidden="true" viewBox="0 0 54 28" fill="none">
@@ -171,7 +137,6 @@ const activities: DemoActivity[] = [
         <input
           v-model="query"
           type="text"
-          placeholder="try 'hike', 'yoga', 'wild swim'…"
           aria-label="Search activities"
         />
         <button type="submit" class="search-button">Search</button>
@@ -180,41 +145,38 @@ const activities: DemoActivity[] = [
 
     <section class="happenings">
       <div class="section-title">
-        <h2>This <em>week</em>, in case you're free</h2>
+        <h2>Activities <em>to explore</em></h2>
         <RouterLink :to="{ name: 'activities' }" class="see-all">Browse everything →</RouterLink>
       </div>
 
-      <div class="happen-grid">
-        <article v-for="activity in activities" :key="activity.id" class="happen-card">
-          <div class="happen-photo" :style="{ backgroundImage: `url(${activity.photo})` }">
-            <span class="happen-tag" :class="`happen-tag-${activity.category.tone}`">
-              {{ activity.category.label }}
-            </span>
-          </div>
-          <div class="happen-body">
-            <h3>{{ activity.title }}</h3>
-            <div class="happen-when">{{ activity.when }}</div>
-            <p>{{ activity.blurb }}</p>
-            <div class="happen-foot">
-              <div class="happen-going">
-                <div class="avatars">
-                  <div
-                    v-for="(avatar, idx) in activity.avatars"
-                    :key="idx"
-                    class="avatar"
-                    :style="{ backgroundImage: `url(${avatar})` }"
-                  />
-                </div>
-                <span class="going-text">
-                  <strong>{{ activity.going }}</strong> going
-                </span>
-              </div>
-              <div class="happen-price" :class="{ 'happen-price-free': activity.isFree }">
-                {{ activity.price }}
-              </div>
-            </div>
-          </div>
-        </article>
+      <div
+        v-if="isInitialLoading"
+        class="happen-grid"
+        aria-label="Loading activities"
+        aria-busy="true"
+      >
+        <div
+          v-for="placeholder in HOME_ACTIVITY_COUNT"
+          :key="placeholder"
+          class="happen-skeleton"
+        />
+      </div>
+
+      <Alert
+        v-else-if="isActivitiesError && activities.length === 0"
+        class="happen-alert"
+        variant="destructive"
+      >
+        <span>{{ mapActivitiesError(activitiesError) }}</span>
+        <Button size="sm" variant="outline" @click="activitiesQuery.refetch()">Try again</Button>
+      </Alert>
+
+      <div v-else-if="activities.length === 0" class="happen-empty" role="status">
+        No public activities are published yet.
+      </div>
+
+      <div v-else class="happen-grid">
+        <ActivityCard v-for="activity in activities" :key="activity.id" :activity="activity" />
       </div>
     </section>
 
@@ -720,117 +682,38 @@ const activities: DemoActivity[] = [
   }
 }
 
-.happen-card {
-  background: white;
-  border: 2px solid var(--primary);
-  border-radius: 24px;
-  overflow: hidden;
-  position: relative;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-  cursor: pointer;
-  box-shadow: 4px 4px 0 var(--primary);
+.happen-skeleton {
+  min-height: 420px;
+  border-radius: 28px;
+  border: 2px solid color-mix(in srgb, var(--primary) 18%, white);
+  background: color-mix(in srgb, var(--primary) 8%, white);
+  animation: happen-pulse 1.6s ease-in-out infinite;
 }
-.happen-card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 8px 8px 0 var(--primary);
+@keyframes happen-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
-.happen-photo {
-  aspect-ratio: 4 / 3;
-  background-size: cover;
-  background-position: center;
-  border-bottom: 2px solid var(--primary);
-  position: relative;
-}
-.happen-tag {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  color: white;
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-family: var(--font-hand);
-  font-weight: 700;
-  font-size: 17px;
-  transform: rotate(-3deg);
-}
-.happen-tag-coral {
-  background: var(--color-coral);
-}
-.happen-tag-ochre {
-  background: var(--color-ochre);
-  color: var(--primary);
-}
-.happen-tag-leaf {
-  background: var(--color-leaf);
-}
-.happen-body {
-  padding: 22px 22px 20px;
-}
-.happen-body h3 {
-  margin: 0 0 6px;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 26px;
-  line-height: 1.1;
-  color: var(--primary);
-}
-.happen-when {
-  font-family: var(--font-hand);
-  font-weight: 700;
-  font-size: 18px;
-  color: var(--color-coral);
-  margin-bottom: 12px;
-}
-.happen-body p {
-  margin: 0 0 18px;
-  font-size: 14.5px;
-  color: var(--muted-foreground);
-  line-height: 1.55;
-}
-.happen-foot {
+.happen-alert {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 14px;
-  border-top: 1.5px dashed color-mix(in srgb, var(--primary) 20%, transparent);
+  gap: 16px;
 }
-.happen-going {
-  display: flex;
-  align-items: center;
-}
-.avatars {
-  display: flex;
-}
-.avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid white;
-  margin-left: -8px;
-  background-size: cover;
-  background-position: center;
-}
-.avatar:first-child {
-  margin-left: 0;
-}
-.going-text {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--muted-foreground);
-  margin-left: 10px;
-}
-.going-text strong {
+.happen-empty {
+  background: white;
+  border: 2px solid var(--primary);
+  border-radius: 28px;
+  box-shadow: 4px 4px 0 var(--color-ochre);
   color: var(--primary);
-}
-.happen-price {
   font-family: var(--font-display);
-  font-size: 22px;
-  color: var(--primary);
-}
-.happen-price-free {
-  color: var(--color-leaf);
+  font-size: 24px;
+  padding: 44px 24px;
+  text-align: center;
 }
 
 /* CTA strip */

@@ -8,7 +8,9 @@ const PlaceholderView = { template: '<div />' }
 
 interface RenderRouteOptions {
   route: string
+  homeComponent?: Component
   authComponent?: Component
+  sportsClubSignupComponent?: Component
   registrationAppealComponent?: Component
   activitiesComponent?: Component
   activityDetailComponent?: Component
@@ -20,7 +22,9 @@ interface RenderRouteOptions {
 
 export async function renderRoute({
   route,
+  homeComponent = PlaceholderView,
   authComponent = PlaceholderView,
+  sportsClubSignupComponent = PlaceholderView,
   registrationAppealComponent = PlaceholderView,
   activitiesComponent = PlaceholderView,
   activityDetailComponent = PlaceholderView,
@@ -33,9 +37,19 @@ export async function renderRoute({
     history: createMemoryHistory(),
     routes: [
       {
+        path: '/',
+        name: 'home',
+        component: homeComponent,
+      },
+      {
         path: '/auth',
         name: 'auth',
         component: authComponent,
+      },
+      {
+        path: '/sports-club-signup',
+        name: 'sports-club-signup',
+        component: sportsClubSignupComponent,
       },
       {
         path: '/auth/appeal',
