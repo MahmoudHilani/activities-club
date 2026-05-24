@@ -36,6 +36,12 @@ describe('HomeView', () => {
       '/activities/7',
     )
     expect(screen.queryByText('Sunrise Spinc loop')).toBeNull()
+    expect(
+      document.querySelector('.cutout-left .cutout-photo')?.getAttribute('style'),
+    ).toContain('/main_page_1.jpg')
+    expect(
+      document.querySelector('.cutout-right .cutout-photo')?.getAttribute('style'),
+    ).toContain('/main_page_2.jpg')
   })
 
   it('shows an empty state when there are no published activities', async () => {

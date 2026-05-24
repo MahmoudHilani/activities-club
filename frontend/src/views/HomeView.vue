@@ -11,6 +11,8 @@ import { getPublicActivities } from '@/lib/api/activities'
 import { mapActivitiesError } from '@/lib/api/errors'
 
 const HOME_ACTIVITY_COUNT = 3
+const leftHeroPhotoUrl = '/main_page_1.jpg'
+const rightHeroPhotoUrl = '/main_page_2.jpg'
 
 const router = useRouter()
 const route = useRoute()
@@ -72,7 +74,7 @@ const activityCountLabel = computed(() => {
           <div
             class="cutout-photo"
             :style="{
-              backgroundImage: 'url(https://picsum.photos/seed/group-hike-friends/500/640)',
+              backgroundImage: `url(${leftHeroPhotoUrl})`,
             }"
           />
           <div class="cutout-sticker cutout-sticker-coral">hike club ✿</div>
@@ -122,7 +124,7 @@ const activityCountLabel = computed(() => {
           <div
             class="cutout-photo"
             :style="{
-              backgroundImage: 'url(https://picsum.photos/seed/yoga-mat-warm-light/500/640)',
+              backgroundImage: `url(${rightHeroPhotoUrl})`,
             }"
           />
           <div class="cutout-sticker cutout-sticker-ochre">every tue 18:30</div>
