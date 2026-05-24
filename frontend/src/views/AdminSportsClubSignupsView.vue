@@ -32,6 +32,12 @@ const sportFilterOptions: ReadonlyArray<{ value: SportFilter; label: string }> =
   { value: 'BASKETBALL', label: 'Basketball' },
   { value: 'BADMINTON', label: 'Badminton' },
   { value: 'VOLLEYBALL', label: 'Volleyball' },
+  { value: 'CRICKET', label: 'Cricket' },
+  { value: 'BILLIARDS', label: 'Billiards' },
+  { value: 'DANCE', label: 'Dance' },
+  { value: 'YOGA', label: 'Yoga' },
+  { value: 'PILATES', label: 'Pilates' },
+  { value: 'BOXERCISE', label: 'Boxercise' },
 ]
 
 const sportLabel: Record<SportsClub, string> = {
@@ -39,6 +45,12 @@ const sportLabel: Record<SportsClub, string> = {
   BASKETBALL: 'Basketball',
   BADMINTON: 'Badminton',
   VOLLEYBALL: 'Volleyball',
+  CRICKET: 'Cricket',
+  BILLIARDS: 'Billiards',
+  DANCE: 'Dance',
+  YOGA: 'Yoga',
+  PILATES: 'Pilates',
+  BOXERCISE: 'Boxercise',
 }
 
 const filteredSignups = computed<SportsClubSignupResponse[]>(() => {

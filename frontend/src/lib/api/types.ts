@@ -86,7 +86,17 @@ export interface AdminActivityReservationsResponse {
 }
 
 export type Gender = 'MALE' | 'FEMALE' | 'OTHER'
-export type SportsClub = 'FOOTBALL' | 'BASKETBALL' | 'BADMINTON' | 'VOLLEYBALL'
+export type SportsClub =
+  | 'FOOTBALL'
+  | 'BASKETBALL'
+  | 'BADMINTON'
+  | 'VOLLEYBALL'
+  | 'CRICKET'
+  | 'BILLIARDS'
+  | 'DANCE'
+  | 'YOGA'
+  | 'PILATES'
+  | 'BOXERCISE'
 
 export interface SportsClubSignupRequest {
   name: string

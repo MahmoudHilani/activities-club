@@ -18,9 +18,7 @@ const isAdminUsersRoute = computed(() => route.path.startsWith('/admin/users'))
 
 <template>
   <header class="app-header">
-    <div
-      class="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8"
-    >
+    <div class="header-shell">
       <RouterLink class="brand" :to="{ name: 'home' }">
         <span class="brand-mark" aria-hidden="true">g</span>
         <span class="brand-text">
@@ -82,9 +80,49 @@ const isAdminUsersRoute = computed(() => route.path.startsWith('/admin/users'))
 .app-header {
   position: relative;
   z-index: 10;
-  border-bottom: 1px solid color-mix(in srgb, var(--primary) 14%, transparent);
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(16px);
+  padding: 14px 1rem 6px;
+}
+.header-shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  max-width: 80rem;
+  min-height: 4.5rem;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+  border: 1.5px solid color-mix(in srgb, var(--primary) 15%, transparent);
+  border-radius: 999px;
+  background:
+    radial-gradient(150px 86px at 8% 20%, rgba(255, 122, 89, 0.14), transparent 72%),
+    radial-gradient(180px 90px at 94% 20%, rgba(245, 176, 66, 0.18), transparent 70%),
+    rgba(255, 255, 255, 0.62);
+  box-shadow:
+    0 14px 34px rgba(36, 62, 128, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(18px);
+}
+@media (min-width: 640px) {
+  .app-header {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  .header-shell {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .app-header {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+  .header-shell {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
 }
 
 /* Brand */
@@ -141,6 +179,23 @@ const isAdminUsersRoute = computed(() => route.path.startsWith('/admin/users'))
   font-size: 16px;
   line-height: 1;
   color: var(--color-coral);
+}
+@media (max-width: 639px) {
+  .brand {
+    gap: 10px;
+  }
+  .brand-tagline {
+    display: none;
+  }
+}
+@media (max-width: 399px) {
+  .header-shell {
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+  .brand-name {
+    display: none;
+  }
 }
 
 /* Nav */
@@ -230,5 +285,11 @@ const isAdminUsersRoute = computed(() => route.path.startsWith('/admin/users'))
   font-size: 18px;
   color: var(--color-coral);
   padding: 0 6px;
+}
+@media (max-width: 639px) {
+  .btn-primary {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }
 </style>

@@ -4,5 +4,11 @@ public enum SportsClub {
     FOOTBALL,
     BASKETBALL,
     BADMINTON,
-    VOLLEYBALL
+    VOLLEYBALL,
+    CRICKET,
+    BILLIARDS,
+    DANCE,
+    YOGA,
+    PILATES,
+    BOXERCISE
 }

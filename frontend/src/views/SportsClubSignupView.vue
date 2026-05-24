@@ -29,6 +29,12 @@ const sportsClubOptions: ReadonlyArray<{ value: SportsClub; label: string; tag: 
   { value: 'BASKETBALL', label: 'Basketball', tag: 'tag-ochre' },
   { value: 'BADMINTON', label: 'Badminton', tag: 'tag-leaf' },
   { value: 'VOLLEYBALL', label: 'Volleyball', tag: 'tag-coral' },
+  { value: 'CRICKET', label: 'Cricket', tag: 'tag-leaf' },
+  { value: 'BILLIARDS', label: 'Billiards', tag: 'tag-ochre' },
+  { value: 'DANCE', label: 'Dance', tag: 'tag-coral' },
+  { value: 'YOGA', label: 'Yoga', tag: 'tag-leaf' },
+  { value: 'PILATES', label: 'Pilates', tag: 'tag-ochre' },
+  { value: 'BOXERCISE', label: 'Boxercise', tag: 'tag-coral' },
 ]
 
 const genderOptions: ReadonlyArray<{ value: Gender; label: string }> = [
@@ -67,7 +73,20 @@ const signupSchema = toTypedSchema(
       .max(120, 'Must be 120 characters or less'),
     gender: z.enum(['MALE', 'FEMALE', 'OTHER'], { message: 'Choose one' }),
     sportsClubs: z
-      .array(z.enum(['FOOTBALL', 'BASKETBALL', 'BADMINTON', 'VOLLEYBALL']))
+      .array(
+        z.enum([
+          'FOOTBALL',
+          'BASKETBALL',
+          'BADMINTON',
+          'VOLLEYBALL',
+          'CRICKET',
+          'BILLIARDS',
+          'DANCE',
+          'YOGA',
+          'PILATES',
+          'BOXERCISE',
+        ]),
+      )
       .min(1, 'Pick at least one sports club'),
   }),
 )
