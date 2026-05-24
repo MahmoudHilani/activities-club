@@ -436,10 +436,6 @@ function getDateOfBirthDisplay(user: UserResponse): string {
           <span class="hand-text"> people </span>
           <span class="display-text">desk</span>
         </h1>
-        <p class="proto-lede">
-          Review pending registrations, keep student dates of birth current, and grant admin
-          access with explicit confirmation.
-        </p>
       </div>
     </header>
 
@@ -809,14 +805,6 @@ function getDateOfBirthDisplay(user: UserResponse): string {
 .proto-title .hand-text {
   font-size: 1.12em;
 }
-.proto-lede {
-  max-width: 64ch;
-  margin: 0;
-  color: var(--muted-foreground);
-  font-size: 15px;
-  line-height: 1.5;
-}
-
 .proto-toolbar {
   display: grid;
   grid-template-columns: 1fr;

@@ -50,7 +50,7 @@ const router = createRouter({
     {
       path: '/admin/activities',
       name: 'admin-activities',
-      component: () => import('@/views/AdminActivitiesView.vue'),
+      component: () => import('@/views/AdminActivitiesPrototypeView.vue'),
       meta: {
         title: 'Activity management',
         requiresAdmin: true,

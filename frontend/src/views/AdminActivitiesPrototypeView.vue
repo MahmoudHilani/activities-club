@@ -239,11 +239,7 @@ async function invalidateActivityQueries(): Promise<void> {
           <span class="display-text">The</span>
           <span class="hand-text"> activity </span>
           <span class="display-text">desk</span>
-          <span class="proto-badge">prototype</span>
         </h1>
-        <p class="proto-lede">
-          Search, filter, sort. One primary action per row, the rest tucked into a menu.
-        </p>
       </div>
       <RouterLink
         :class="[buttonVariants({ size: 'lg' }), 'proto-new-btn']"
@@ -488,10 +484,11 @@ async function invalidateActivityQueries(): Promise<void> {
       class="proto-modal-backdrop"
       role="dialog"
       aria-modal="true"
+      aria-labelledby="activity-confirm-title"
       @click.self="dismissConfirm"
     >
       <div class="proto-modal">
-        <h2 class="proto-modal-title">
+        <h2 id="activity-confirm-title" class="proto-modal-title">
           <template v-if="confirmIntent.kind === 'cancel'">
             Cancel "{{ confirmIntent.activity.title }}"?
           </template>
@@ -579,23 +576,6 @@ async function invalidateActivityQueries(): Promise<void> {
 }
 .proto-title .hand-text {
   font-size: 1.12em;
-}
-.proto-badge {
-  font-family: var(--font-hand);
-  font-size: 14px;
-  background: var(--color-coral);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 999px;
-  transform: rotate(-3deg);
-  align-self: center;
-}
-.proto-lede {
-  margin: 0;
-  max-width: 60ch;
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--muted-foreground);
 }
 .proto-new-btn {
   flex-shrink: 0;

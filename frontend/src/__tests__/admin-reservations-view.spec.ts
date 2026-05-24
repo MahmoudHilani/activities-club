@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 
-import AdminActivitiesView from '@/views/AdminActivitiesView.vue'
+import AdminActivitiesView from '@/views/AdminActivitiesPrototypeView.vue'
 import AdminActivityReservationsView from '@/views/AdminActivityReservationsView.vue'
 import {
   buildActivity,
@@ -34,6 +34,7 @@ describe('AdminActivityReservationsView', () => {
 
     expect(await screen.findByText('Chess Night')).toBeTruthy()
 
+    await user.click(screen.getByRole('button', { name: /More actions/i }))
     await user.click(screen.getByRole('link', { name: /View reservations/i }))
 
     await waitFor(() => {
