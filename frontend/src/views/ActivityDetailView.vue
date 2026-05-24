@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { ArrowLeft, CalendarDays, LoaderCircle, MapPin } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { Alert } from '@/components/ui/alert'
@@ -30,6 +30,9 @@ const router = useRouter()
 const queryClient = useQueryClient()
 const sessionStore = useSessionStore()
 const reservationError = ref('')
+const ctaStrip = ref<HTMLElement | null>(null)
+const ctaFooterOffset = ref(0)
+let ctaPositionFrame: number | null = null
 
 function parseActivityId(value: unknown): number | null {
   const parsed = Number(Array.isArray(value) ? value[0] : value)
@@ -162,6 +165,52 @@ const reservationMutation = useMutation({
       ? cancelReservation(activityId.value)
       : reserveActivity(activityId.value)
   },
+})
+
+function updateCtaPosition(): void {
+  ctaPositionFrame = null
+
+  const strip = ctaStrip.value
+  const footer = document.querySelector<HTMLElement>('.app-footer')
+  if (!strip || !footer) {
+    ctaFooterOffset.value = 0
+    return
+  }
+
+  const bottomOffset = Number.parseFloat(window.getComputedStyle(strip).bottom) || 0
+  const footerClearance = 64
+  const stripBottom = window.innerHeight - bottomOffset + footerClearance
+
+  ctaFooterOffset.value = Math.max(0, Math.ceil(stripBottom - footer.getBoundingClientRect().top))
+}
+
+function scheduleCtaPosition(): void {
+  if (ctaPositionFrame !== null) {
+    return
+  }
+
+  ctaPositionFrame = window.requestAnimationFrame(updateCtaPosition)
+}
+
+watch(ctaStrip, (strip) => {
+  if (strip) {
+    scheduleCtaPosition()
+  }
+})
+
+onMounted(() => {
+  scheduleCtaPosition()
+  window.addEventListener('scroll', scheduleCtaPosition, { passive: true })
+  window.addEventListener('resize', scheduleCtaPosition)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', scheduleCtaPosition)
+  window.removeEventListener('resize', scheduleCtaPosition)
+
+  if (ctaPositionFrame !== null) {
+    window.cancelAnimationFrame(ctaPositionFrame)
+  }
 })
 
 async function handlePrimaryAction(): Promise<void> {
@@ -342,8 +391,14 @@ async function handlePrimaryAction(): Promise<void> {
         </div>
       </div>
 
-      <!-- Sticky CTA strip -->
-      <div class="cta-strip" role="region" aria-label="Reservation actions">
+      <!-- Sticky reservation CTA strip -->
+      <div
+        ref="ctaStrip"
+        class="cta-strip"
+        role="region"
+        aria-label="Reservation actions"
+        :style="{ transform: `translateY(-${ctaFooterOffset}px)` }"
+      >
         <div class="cta-strip-inner">
           <div class="cta-info">
             <p class="cta-when">{{ scheduleHeadline }}</p>
