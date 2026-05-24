@@ -40,6 +40,14 @@ const router = createRouter({
       },
     },
     {
+      path: '/sports-club-signup',
+      name: 'sports-club-signup',
+      component: () => import('@/views/SportsClubSignupView.vue'),
+      meta: {
+        title: 'Sign up to a sports club',
+      },
+    },
+    {
       path: '/auth/appeal',
       name: 'registration-appeal',
       component: () => import('@/views/RegistrationAppealView.vue'),
@@ -98,6 +106,15 @@ const router = createRouter({
       component: () => import('@/views/AdminUsersView.vue'),
       meta: {
         title: 'User management',
+        requiresAdmin: true,
+      },
+    },
+    {
+      path: '/admin/sports-club-signups',
+      name: 'admin-sports-club-signups',
+      component: () => import('@/views/AdminSportsClubSignupsView.vue'),
+      meta: {
+        title: 'Sports club signups',
         requiresAdmin: true,
       },
     },

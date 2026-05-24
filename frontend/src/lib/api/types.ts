@@ -85,6 +85,32 @@ export interface AdminActivityReservationsResponse {
   reservations: AdminActivityReservationEntryResponse[]
 }
 
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER'
+export type SportsClub = 'FOOTBALL' | 'BASKETBALL' | 'BADMINTON' | 'VOLLEYBALL'
+
+export interface SportsClubSignupRequest {
+  name: string
+  email: string
+  phoneNumber: string
+  studentNumber: string
+  course: string
+  gender: Gender
+  sportsClubs: SportsClub[]
+}
+
+export interface SportsClubSignupResponse {
+  id: number
+  name: string
+  email: string
+  phoneNumber: string
+  studentNumber: string
+  course: string
+  gender: Gender
+  sportsClubs: SportsClub[]
+  userId: number | null
+  createdAt: string
+}
+
 export interface PageResponse<T> {
   content: T[]
   totalElements: number

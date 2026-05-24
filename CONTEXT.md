@@ -28,6 +28,14 @@ _Avoid_: Rejected user, blocked account
 A denied person's request to update their registration details and return the registration for admin review.
 _Avoid_: Re-registration, reopen signup
 
+**Sports Club Signup**:
+A standalone submission expressing interest in joining one or more sports clubs, captured from the home page form and stored independently of account registration.
+_Avoid_: Sports membership, club registration, sports application
+
+**Sports Club**:
+A named sport offered as a selectable option on a **Sports Club Signup** (e.g. football, basketball, badminton, volleyball).
+_Avoid_: Sport category, activity type
+
 ## Relationships
 
 - A **Date of Birth** is the source fact for deciding whether a student is an **Underage Student**.
@@ -39,6 +47,10 @@ _Avoid_: Re-registration, reopen signup
 - A **Denied Registration** returns for review only through a **Registration Appeal**, not by a new registration or by an admin reversing denial.
 - A **Registration Appeal** requires the denied person to prove control of the existing registration.
 - A **Registration Appeal** updates registration details, not account credentials.
+- A **Sports Club Signup** is independent of a **Registration**; an anonymous visitor or a signed-in user may submit one.
+- A **Sports Club Signup** submitted by a signed-in user is linked to that user; a submission by an anonymous visitor is not linked.
+- A person may submit more than one **Sports Club Signup**; admins dedupe by email.
+- A **Sports Club Signup** does not change a user's profile fields.
 
 ## Example dialogue
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Search } from 'lucide-vue-next'
-import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 type DemoActivity = {
   id: string
@@ -17,7 +17,21 @@ type DemoActivity = {
 }
 
 const router = useRouter()
+const route = useRoute()
 const query = ref('')
+
+const signupToast = ref(false)
+const showSignupToast = computed(() => signupToast.value)
+
+onMounted(() => {
+  if (route.query.signup === 'success') {
+    signupToast.value = true
+    router.replace({ name: 'home', query: {} })
+    window.setTimeout(() => {
+      signupToast.value = false
+    }, 6000)
+  }
+})
 
 function submitSearch(): void {
   router.push({
@@ -208,24 +222,99 @@ const activities: DemoActivity[] = [
       <div class="cta-strip-inner">
         <div>
           <h3>
-            One <em>tiny</em> fee.<br />
-            A whole year of weekends.
+            Join a <em>sports club</em><br />
+            at the college.
           </h3>
-          <p>
-            Membership unlocks discounted trips, drop-in weekly classes, the social calendar, and
-            the WhatsApp group where the actual fun is planned.
-          </p>
-          <RouterLink :to="{ name: 'auth', query: { mode: 'register' } }" class="cta-strip-btn">
-            Become a member →
+          <RouterLink :to="{ name: 'sports-club-signup' }" class="cta-strip-btn">
+            Sign up →
           </RouterLink>
         </div>
         <div class="cta-strip-right">
-          <div class="cta-strip-price">€40</div>
-          <div class="cta-strip-per">for the whole academic year</div>
-          <div class="cta-strip-arrow">↑ a single oat flat white a month, basically</div>
+          <span class="cta-sport-chip cta-sport-chip-coral" aria-label="Football">
+            <svg
+              class="cta-sport-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7l3.5 2.5L14 13.5h-4L8.5 9.5z" />
+              <path d="M12 7V3" />
+              <path d="M15.5 9.5l4-1" />
+              <path d="M14 13.5l2.5 3.5" />
+              <path d="M10 13.5l-2.5 3.5" />
+              <path d="M8.5 9.5l-4-1" />
+            </svg>
+          </span>
+          <span class="cta-sport-chip cta-sport-chip-ochre" aria-label="Basketball">
+            <svg
+              class="cta-sport-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 3v18" />
+              <path d="M3 12h18" />
+              <path d="M5.5 5.5Q12 12 5.5 18.5" />
+              <path d="M18.5 5.5Q12 12 18.5 18.5" />
+            </svg>
+          </span>
+          <span class="cta-sport-chip cta-sport-chip-leaf" aria-label="Badminton">
+            <svg
+              class="cta-sport-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M4 6L9.5 17h5L20 6" />
+              <path d="M4 6Q12 8 20 6" />
+              <path d="M8 6l2 11" />
+              <path d="M16 6l-2 11" />
+              <ellipse cx="12" cy="19" rx="3" ry="1.6" />
+            </svg>
+          </span>
+          <span class="cta-sport-chip cta-sport-chip-coral" aria-label="Volleyball">
+            <svg
+              class="cta-sport-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 3C7 8 7 16 12 21" />
+              <path d="M3 12C8 7 16 7 21 12" />
+              <path d="M3 12C8 17 16 17 21 12" />
+            </svg>
+          </span>
         </div>
       </div>
     </section>
+
+    <Transition name="signup-toast">
+      <div v-if="showSignupToast" class="signup-toast" role="status" aria-live="polite">
+        <span class="signup-toast-tag">Thanks!</span>
+        <span class="signup-toast-message">
+          Your sports club signup is in. We'll be in touch.
+        </span>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -811,24 +900,69 @@ const activities: DemoActivity[] = [
   transform: translate(-2px, -2px);
 }
 .cta-strip-right {
-  text-align: center;
+  position: relative;
+  width: 100%;
+  min-height: 280px;
 }
-.cta-strip-price {
-  font-family: var(--font-display);
-  font-size: 96px;
-  line-height: 1;
-  color: var(--color-ochre);
+.cta-sport-chip {
+  position: absolute;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 5px 5px 0 var(--primary-foreground);
 }
-.cta-strip-per {
-  font-family: var(--font-hand);
-  font-size: 28px;
-  margin-top: -8px;
+.cta-sport-icon {
+  width: 60%;
+  height: 60%;
 }
-.cta-strip-arrow {
-  font-family: var(--font-hand);
-  font-size: 20px;
-  opacity: 0.9;
-  margin-top: 12px;
+.cta-sport-chip-coral {
+  background: var(--color-coral);
+}
+.cta-sport-chip-ochre {
+  background: var(--color-ochre);
+  color: var(--primary);
+}
+.cta-sport-chip-leaf {
+  background: var(--color-leaf);
+}
+.cta-sport-chip:nth-child(1) {
+  width: 124px;
+  height: 124px;
+  top: 4px;
+  left: 6%;
+  transform: rotate(-9deg);
+}
+.cta-sport-chip:nth-child(2) {
+  width: 108px;
+  height: 108px;
+  top: 32px;
+  right: 16%;
+  transform: rotate(7deg);
+}
+.cta-sport-chip:nth-child(3) {
+  width: 116px;
+  height: 116px;
+  bottom: 8px;
+  left: 26%;
+  transform: rotate(-4deg);
+}
+.cta-sport-chip:nth-child(4) {
+  width: 100px;
+  height: 100px;
+  bottom: 24px;
+  right: 4%;
+  transform: rotate(12deg);
+}
+@media (max-width: 540px) {
+  .cta-strip-right {
+    min-height: 220px;
+  }
+  .cta-sport-chip:nth-child(1) { width: 96px; height: 96px; }
+  .cta-sport-chip:nth-child(2) { width: 84px; height: 84px; }
+  .cta-sport-chip:nth-child(3) { width: 92px; height: 92px; }
+  .cta-sport-chip:nth-child(4) { width: 80px; height: 80px; }
 }
 
 @media (max-width: 900px) {
@@ -838,5 +972,47 @@ const activities: DemoActivity[] = [
   .hero {
     padding-top: 1.5rem;
   }
+}
+
+.signup-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 60;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: 999px;
+  padding: 14px 22px;
+  box-shadow: 4px 4px 0 var(--color-leaf);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+}
+.signup-toast-tag {
+  background: var(--color-coral);
+  color: white;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 17px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  transform: rotate(-3deg);
+}
+.signup-toast-message {
+  font-weight: 600;
+  font-size: 15px;
+}
+.signup-toast-enter-active,
+.signup-toast-leave-active {
+  transition:
+    opacity 0.25s,
+    transform 0.25s;
+}
+.signup-toast-enter-from,
+.signup-toast-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 16px);
 }
 </style>
